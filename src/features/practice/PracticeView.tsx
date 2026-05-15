@@ -63,9 +63,8 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   const [currentStreak, setCurrentStreak] = useState(0);
   const questionStartedAt = useRef(Date.now());
   const autoAdvanceRef = useRef<number | null>(null);
-  const summarySectionRef = useRef<HTMLElement | null>(null);
   const questionSectionRef = useRef<HTMLElement | null>(null);
-  const [showCompactStatus, setShowCompactStatus] = useState(false);
+  const [statusExpanded, setStatusExpanded] = useState(false);
 
   const activeNotes = useMemo(() => {
     const base = getNotesForLevel(config.level, config.selectedNoteIds ?? settings.selectedNoteIds, settings.accidentalsEnabled);
@@ -156,46 +155,9 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     if (!currentQuestionId) return;
     const id = window.setTimeout(() => {
       questionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.setTimeout(() => {
-        const summary = summarySectionRef.current;
-        if (!summary) return;
-        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-        const summaryBottom = summary.offsetTop + summary.offsetHeight;
-        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8 || scrollTop >= summaryBottom - 24);
-      }, 350);
     }, 80);
     return () => window.clearTimeout(id);
   }, [currentQuestionId]);
-
-  useEffect(() => {
-    const summary = summarySectionRef.current;
-    if (!summary) return;
-
-    let frameId = 0;
-    const updateCompactStatus = () => {
-      window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-        const summaryBottom = summary.offsetTop + summary.offsetHeight;
-        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8 || scrollTop >= summaryBottom - 24);
-      });
-    };
-
-    updateCompactStatus();
-    window.addEventListener("scroll", updateCompactStatus, { passive: true });
-    window.addEventListener("resize", updateCompactStatus);
-    document.addEventListener("scroll", updateCompactStatus, { passive: true, capture: true });
-    window.visualViewport?.addEventListener("scroll", updateCompactStatus, { passive: true });
-    window.visualViewport?.addEventListener("resize", updateCompactStatus);
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener("scroll", updateCompactStatus);
-      window.removeEventListener("resize", updateCompactStatus);
-      document.removeEventListener("scroll", updateCompactStatus, { capture: true });
-      window.visualViewport?.removeEventListener("scroll", updateCompactStatus);
-      window.visualViewport?.removeEventListener("resize", updateCompactStatus);
-    };
-  }, []);
 
   const finishSession = useCallback(async () => {
     if (autoAdvanceRef.current) window.clearTimeout(autoAdvanceRef.current);
@@ -322,34 +284,31 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
   return (
     <div className="space-y-4 py-4">
-      <section ref={summarySectionRef} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "mode")}</div>
-            <div className="font-bold">{modeName(config.mode, settings.language)} {config.weakOnly ? `· ${t(settings.language, "weakNotes")}` : ""}</div>
+      <section className="sticky top-2 z-40 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+        <button
+          type="button"
+          onClick={() => setStatusExpanded((value) => !value)}
+          aria-expanded={statusExpanded}
+          className="grid w-full grid-cols-4 items-center gap-2 text-center text-xs text-slate-600 dark:text-slate-300"
+        >
+          <span className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</span>
+          <span>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></span>
+          <span>{t(settings.language, "done")} <b className="text-ink dark:text-white">{attempts.length}</b></span>
+          <span>{t(settings.language, "streak")} <b className="text-ink dark:text-white">{currentStreak}</b></span>
+        </button>
+        {statusExpanded && (
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 text-sm dark:border-slate-700">
+            <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "mode")}</div>
+              <div className="font-bold">{modeName(config.mode, settings.language)} {config.weakOnly ? `· ${t(settings.language, "weakNotes")}` : ""}</div>
+            </div>
+            <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+              <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "level")}</div>
+              <div className="font-bold">{levelName(config.level, settings.language)}</div>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-xs uppercase tracking-wide text-slate-500">{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")}</div>
-            <div className="font-mono text-xl font-black">{progressLabel}</div>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-          <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">{t(settings.language, "done")} <b>{attempts.length}</b></div>
-          <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">{t(settings.language, "streak")} <b>{currentStreak}</b></div>
-          <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">{t(settings.language, "level")} <b>{levelName(config.level, settings.language)}</b></div>
-        </div>
+        )}
       </section>
-
-      {showCompactStatus && (
-        <section className="fixed inset-x-4 top-3 z-40 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90 sm:left-1/2 sm:right-auto sm:w-[calc(100%-3rem)] sm:max-w-3xl sm:-translate-x-1/2">
-          <div className="grid grid-cols-4 items-center gap-2 text-center text-xs text-slate-600 dark:text-slate-300">
-            <div className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</div>
-            <div>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></div>
-            <div>{t(settings.language, "done")} <b className="text-ink dark:text-white">{attempts.length}</b></div>
-            <div>{t(settings.language, "streak")} <b className="text-ink dark:text-white">{currentStreak}</b></div>
-          </div>
-        </section>
-      )}
 
       <section ref={questionSectionRef} className="scroll-mt-20 space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
         <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t(settings.language, "question")}</div>
