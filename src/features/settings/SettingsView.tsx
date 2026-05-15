@@ -67,7 +67,6 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         <Select label={t(settings.language, "displayLanguage")} value={settings.language} onChange={(value) => update("language", value as AppSettings["language"])}>
           <option value="en">{t(settings.language, "english")}</option>
           <option value="zh">{t(settings.language, "chinese")}</option>
-          <option value="bilingual">{t(settings.language, "bilingual")}</option>
         </Select>
         <Select label={t(settings.language, "appearance")} value={settings.theme} onChange={(value) => update("theme", value as AppSettings["theme"])}>
           <option value="system">{t(settings.language, "themeSystem")}</option>

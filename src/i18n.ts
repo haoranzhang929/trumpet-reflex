@@ -7,6 +7,7 @@ const zh: Record<string, string> = {
   offlineReady: "",
   home: "首页",
   practice: "练习",
+  navStart: "开始",
   review: "复盘",
   reference: "参考",
   settings: "设置",
@@ -112,7 +113,6 @@ const zh: Record<string, string> = {
   themeDark: "深色",
   english: "英语",
   chinese: "中文",
-  bilingual: "双语",
   autoAdvance: "答对后自动进入下一题",
   hintsAfterWrong: "答错后显示提示",
   enableAccidentals: "启用常见变化音",
@@ -207,6 +207,7 @@ const en: Record<string, string> = {
   offlineReady: "",
   home: "Home",
   practice: "Practice",
+  navStart: "Start",
   review: "Review",
   reference: "Reference",
   settings: "Settings",
@@ -216,8 +217,8 @@ const en: Record<string, string> = {
   close: "Close",
   homeValueProp: "Train your trumpet reading reflex.",
   homeReflexChain: "Staff → Name → Fingering. Faster every day.",
-  startTodaySession: "Start Today’s 10-Minute Session",
-  todaySessionSubcopy: "Five short segments, no setup needed",
+  startTodaySession: "Start 10-Minute Session",
+  todaySessionSubcopy: "Today’s five-part routine, no setup needed",
   todaysFocus: "Today’s focus",
   todayFocusEmpty: "Build a baseline with today’s session.",
   lastScore: "last score",
@@ -312,7 +313,6 @@ const en: Record<string, string> = {
   themeDark: "Dark",
   english: "English",
   chinese: "Chinese",
-  bilingual: "Bilingual",
   autoAdvance: "Auto-advance after correct answer",
   hintsAfterWrong: "Show hints after wrong answer",
   enableAccidentals: "Enable common accidentals",
@@ -404,11 +404,6 @@ const en: Record<string, string> = {
 
 export function t(language: Language, key: string): string {
   if (language === "zh") return zh[key] ?? en[key] ?? key;
-  if (language === "bilingual") {
-    const english = en[key] ?? key;
-    const chinese = zh[key];
-    return chinese ? `${english} / ${chinese}` : english;
-  }
   return en[key] ?? key;
 }
 
@@ -473,18 +468,10 @@ const zhStaffText: Record<string, { location: string; hint: string }> = {
 
 export function staffLocation(note: StaffSpelling, language: Language): string {
   if (language === "zh") return zhStaffText[note.id]?.location ?? note.staff.location;
-  if (language === "bilingual") {
-    const chinese = zhStaffText[note.id]?.location;
-    return chinese ? `${note.staff.location} / ${chinese}` : note.staff.location;
-  }
   return note.staff.location;
 }
 
 export function staffHint(note: StaffSpelling, language: Language): string {
   if (language === "zh") return zhStaffText[note.id]?.hint ?? note.staff.hint;
-  if (language === "bilingual") {
-    const chinese = zhStaffText[note.id]?.hint;
-    return chinese ? `${note.staff.hint} / ${chinese}` : note.staff.hint;
-  }
   return note.staff.hint;
 }

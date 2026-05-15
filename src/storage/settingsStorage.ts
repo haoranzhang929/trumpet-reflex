@@ -24,7 +24,11 @@ export function loadSettings(): AppSettings {
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (!raw) return defaultSettings;
   try {
-    return { ...defaultSettings, ...JSON.parse(raw) } as AppSettings;
+    const stored = { ...defaultSettings, ...JSON.parse(raw) } as AppSettings & { language?: string };
+    return {
+      ...stored,
+      language: stored.language === "zh" ? "zh" : "en"
+    };
   } catch {
     return defaultSettings;
   }

@@ -263,11 +263,11 @@ export default function App() {
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 border-t border-black/10 bg-white/78 px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur-xl dark:border-white/10 dark:bg-[#111113]/78">
-          <div className="mx-auto grid max-w-3xl grid-cols-5 gap-1 text-[11px] font-semibold leading-tight sm:text-xs">
+          <div className="mx-auto grid max-w-3xl grid-cols-5 gap-1 text-[13px] font-semibold leading-tight">
             {([
               ["home", "home"],
-              ["practiceMenu", "practice"],
               ["review", "review"],
+              ["practiceMenu", "navStart"],
               ["reference", "navReference"],
               ["settings", "navSettings"]
             ] as const).map(([item, labelKey]) => (
@@ -275,13 +275,13 @@ export default function App() {
                 key={item}
                 type="button"
                 onClick={() => navigateTo(item)}
-                className={`min-w-0 truncate rounded-lg px-1 py-2 capitalize ${
-                  view === item || (item === "practiceMenu" && view === "practice")
-                    ? "bg-[#007AFF]/10 text-brass dark:bg-[#60A5FA]/18 dark:text-[#93C5FD]"
-                    : "text-[#6E6E73] dark:text-[#A1A1AA]"
-                }`}
+                className={navButtonClass(item, view)}
               >
-                {t(settings.language, labelKey)}
+                {item === "practiceMenu" ? (
+                  <span className="relative z-10">{t(settings.language, labelKey)}</span>
+                ) : (
+                  t(settings.language, labelKey)
+                )}
               </button>
             ))}
           </div>
@@ -290,6 +290,23 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+function navButtonClass(item: View, view: View): string {
+  const isActive = view === item || (item === "practiceMenu" && view === "practice");
+  if (item === "practiceMenu") {
+    return [
+      "relative min-w-0 truncate rounded-lg px-1 py-2 text-base font-bold capitalize",
+      isActive
+        ? "bg-[#007AFF]/10 text-brass dark:bg-[#60A5FA]/18 dark:text-[#93C5FD]"
+        : "nav-practice-tab text-brass dark:text-[#93C5FD]"
+    ].join(" ");
+  }
+  return `min-w-0 truncate rounded-lg px-1 py-2 capitalize ${
+    isActive
+      ? "bg-[#007AFF]/10 text-brass dark:bg-[#60A5FA]/18 dark:text-[#93C5FD]"
+      : "text-[#6E6E73] dark:text-[#A1A1AA]"
+  }`;
 }
 
 function PracticeMenuView({
@@ -418,9 +435,9 @@ function HomeView({
           <p className="mt-2 text-base font-semibold text-[#1D1D1F] dark:text-white">{t(settings.language, "homeValueProp")}</p>
           <p className="mt-1 text-sm leading-6 text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "homeReflexChain")}</p>
         </div>
-        <button type="button" onClick={startTodaySession} className="brass-animate-button min-h-16 w-full rounded-lg px-4 text-left text-lg font-black text-white shadow-lg shadow-[#007AFF]/20">
-          {t(settings.language, "startTodaySession")}
-          <span className="block text-sm font-semibold text-white/85">{t(settings.language, "todaySessionSubcopy")}</span>
+        <button type="button" onClick={startTodaySession} className="brass-animate-button min-h-16 w-full overflow-hidden rounded-lg px-4 py-3 text-left text-lg font-black leading-tight text-white shadow-lg shadow-[#007AFF]/20">
+          <span className="block max-w-full text-wrap break-words">{t(settings.language, "startTodaySession")}</span>
+          <span className="mt-1 block max-w-full text-wrap break-words text-sm font-medium leading-snug text-white/82">{t(settings.language, "todaySessionSubcopy")}</span>
         </button>
       </section>
 
@@ -578,6 +595,5 @@ function HelpDialog({ language, onClose }: { language: AppSettings["language"]; 
 
 function presetCopy(language: AppSettings["language"], english: string, chinese: string): string {
   if (language === "zh") return chinese;
-  if (language === "bilingual") return `${english} / ${chinese}`;
   return english;
 }

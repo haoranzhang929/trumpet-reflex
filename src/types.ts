@@ -122,7 +122,7 @@ export type Attempt = {
 };
 
 export type AppSettings = {
-  language: "en" | "zh" | "bilingual";
+  language: "en" | "zh";
   theme: "system" | "light" | "dark";
   defaultMode: PracticeMode;
   defaultLevel: DifficultyLevel;
