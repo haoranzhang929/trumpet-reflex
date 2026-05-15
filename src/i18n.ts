@@ -179,7 +179,7 @@ const en: Record<string, string> = {
   reference: "Reference",
   settings: "Settings",
   navReference: "Ref",
-  navSettings: "Prefs",
+  navSettings: "Settings",
   help: "Help",
   close: "Close",
   tenMinuteMixed: "10-minute mixed practice",

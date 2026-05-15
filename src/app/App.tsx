@@ -205,8 +205,8 @@ export default function App() {
           {view === "reference" && <ReferenceView language={settings.language} />}
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
-          <div className="mx-auto grid max-w-3xl grid-cols-5 gap-2 text-xs font-semibold">
+        <nav className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
+          <div className="mx-auto grid max-w-3xl grid-cols-5 gap-1 text-[11px] font-semibold leading-tight sm:text-xs">
             {([
               ["home", "home"],
               ["practiceMenu", "practice"],
@@ -218,7 +218,7 @@ export default function App() {
                 key={item}
                 type="button"
                 onClick={() => navigateTo(item)}
-                className={`rounded-lg px-2 py-2 capitalize ${view === item || (item === "practiceMenu" && view === "practice") ? "bg-ink text-white dark:bg-white dark:text-ink" : "text-slate-600 dark:text-slate-300"}`}
+                className={`min-w-0 truncate rounded-lg px-1 py-2 capitalize ${view === item || (item === "practiceMenu" && view === "practice") ? "bg-ink text-white dark:bg-white dark:text-ink" : "text-slate-600 dark:text-slate-300"}`}
               >
                 {t(settings.language, labelKey)}
               </button>

@@ -156,6 +156,13 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     if (!currentQuestionId) return;
     const id = window.setTimeout(() => {
       questionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => {
+        const summary = summarySectionRef.current;
+        if (!summary) return;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const summaryBottom = summary.offsetTop + summary.offsetHeight;
+        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8 || scrollTop >= summaryBottom - 24);
+      }, 350);
     }, 80);
     return () => window.clearTimeout(id);
   }, [currentQuestionId]);
@@ -168,17 +175,25 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     const updateCompactStatus = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => {
-        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8);
+        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const summaryBottom = summary.offsetTop + summary.offsetHeight;
+        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8 || scrollTop >= summaryBottom - 24);
       });
     };
 
     updateCompactStatus();
     window.addEventListener("scroll", updateCompactStatus, { passive: true });
     window.addEventListener("resize", updateCompactStatus);
+    document.addEventListener("scroll", updateCompactStatus, { passive: true, capture: true });
+    window.visualViewport?.addEventListener("scroll", updateCompactStatus, { passive: true });
+    window.visualViewport?.addEventListener("resize", updateCompactStatus);
     return () => {
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("scroll", updateCompactStatus);
       window.removeEventListener("resize", updateCompactStatus);
+      document.removeEventListener("scroll", updateCompactStatus, { capture: true });
+      window.visualViewport?.removeEventListener("scroll", updateCompactStatus);
+      window.visualViewport?.removeEventListener("resize", updateCompactStatus);
     };
   }, []);
 
