@@ -326,7 +326,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       </section>
 
       {showCompactStatus && (
-        <section className="sticky top-2 z-20 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+        <section className="fixed inset-x-4 top-3 z-40 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90 sm:left-1/2 sm:right-auto sm:w-[calc(100%-3rem)] sm:max-w-3xl sm:-translate-x-1/2">
           <div className="grid grid-cols-4 items-center gap-2 text-center text-xs text-slate-600 dark:text-slate-300">
             <div className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</div>
             <div>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></div>

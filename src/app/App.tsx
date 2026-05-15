@@ -211,8 +211,8 @@ export default function App() {
               ["home", "home"],
               ["practiceMenu", "practice"],
               ["review", "review"],
-              ["reference", "reference"],
-              ["settings", "settings"]
+              ["reference", "navReference"],
+              ["settings", "navSettings"]
             ] as const).map(([item, labelKey]) => (
               <button
                 key={item}
