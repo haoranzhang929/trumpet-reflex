@@ -164,12 +164,22 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     const summary = summarySectionRef.current;
     if (!summary) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowCompactStatus(!entry.isIntersecting),
-      { threshold: 0.05 }
-    );
-    observer.observe(summary);
-    return () => observer.disconnect();
+    let frameId = 0;
+    const updateCompactStatus = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        setShowCompactStatus(summary.getBoundingClientRect().bottom <= 8);
+      });
+    };
+
+    updateCompactStatus();
+    window.addEventListener("scroll", updateCompactStatus, { passive: true });
+    window.addEventListener("resize", updateCompactStatus);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", updateCompactStatus);
+      window.removeEventListener("resize", updateCompactStatus);
+    };
   }, []);
 
   const finishSession = useCallback(async () => {
