@@ -1,16 +1,13 @@
 import type { Valve } from "../types";
-import { formatValves } from "../data/notes";
 
 type Props = {
   selected: Valve[];
   onChange: (valves: Valve[]) => void;
-  onSubmit: () => void;
   disabled?: boolean;
   openLabel?: string;
-  submitLabel?: string;
 };
 
-export function ValvePad({ selected, onChange, onSubmit, disabled = false, openLabel = "Open / 0", submitLabel = "Submit" }: Props) {
+export function ValvePad({ selected, onChange, disabled = false, openLabel = "Open / 0" }: Props) {
   const toggle = (valve: Valve) => {
     if (selected.includes(valve)) onChange(selected.filter((item) => item !== valve));
     else onChange([...selected, valve].sort() as Valve[]);
@@ -38,7 +35,7 @@ export function ValvePad({ selected, onChange, onSubmit, disabled = false, openL
           );
         })}
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3">
         <button
           type="button"
           disabled={disabled}
@@ -46,14 +43,6 @@ export function ValvePad({ selected, onChange, onSubmit, disabled = false, openL
           className="min-h-14 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white"
         >
           {openLabel}
-        </button>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onSubmit}
-          className="min-h-14 rounded-lg bg-ink text-lg font-semibold text-white dark:bg-white dark:text-ink"
-        >
-          {submitLabel} {formatValves(selected)}
         </button>
       </div>
     </div>

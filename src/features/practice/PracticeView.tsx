@@ -56,12 +56,16 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   const [revealed, setRevealed] = useState(false);
   const revealReactionMsRef = useRef<number | null>(null);
   const [selectedValves, setSelectedValves] = useState<Valve[]>([]);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [paused, setPaused] = useState(false);
   const [remainingSec, setRemainingSec] = useState(config.durationSec);
   const [currentStreak, setCurrentStreak] = useState(0);
   const questionStartedAt = useRef(Date.now());
   const autoAdvanceRef = useRef<number | null>(null);
+  const summarySectionRef = useRef<HTMLElement | null>(null);
+  const questionSectionRef = useRef<HTMLElement | null>(null);
+  const [showCompactStatus, setShowCompactStatus] = useState(false);
 
   const activeNotes = useMemo(() => {
     const base = getNotesForLevel(config.level, config.selectedNoteIds ?? settings.selectedNoteIds, settings.accidentalsEnabled);
@@ -80,6 +84,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     setRevealed(false);
     revealReactionMsRef.current = null;
     setSelectedValves([]);
+    setSelectedAnswer("");
     setShowHint(false);
     if (config.mode === "phrase-self-check") {
       const phrase = generatePhrase({
@@ -135,6 +140,8 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     setFeedback(null);
     setRevealed(false);
     revealReactionMsRef.current = null;
+    setSelectedAnswer("");
+    setSelectedValves([]);
     setQuestion(null);
     previousNoteIdRef.current = undefined;
   }, [config.durationSec, config.level, config.mode, config.weakOnly]);
@@ -142,6 +149,28 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   useEffect(() => {
     if (!question && activeNotes.length > 0) nextQuestion();
   }, [activeNotes.length, nextQuestion, question]);
+
+  const currentQuestionId = question?.id;
+
+  useEffect(() => {
+    if (!currentQuestionId) return;
+    const id = window.setTimeout(() => {
+      questionSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [currentQuestionId]);
+
+  useEffect(() => {
+    const summary = summarySectionRef.current;
+    if (!summary) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowCompactStatus(!entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    observer.observe(summary);
+    return () => observer.disconnect();
+  }, []);
 
   const finishSession = useCallback(async () => {
     if (autoAdvanceRef.current) window.clearTimeout(autoAdvanceRef.current);
@@ -246,13 +275,14 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         setSelectedValves((current) => current.includes(valve) ? current.filter((item) => item !== valve) : ([...current, valve].sort() as Valve[]));
       }
       const isSelfCheckQuestion = question?.mode === "instrument-self-check" || question?.mode === "phrase-self-check";
-      if (event.key === "Enter" && question?.answerKind === "fingering" && !isSelfCheckQuestion) {
-        submitAnswer(selectedValves);
+      if (event.key === "Enter" && question && !isSelfCheckQuestion) {
+        if (question.answerKind === "fingering") submitAnswer(selectedValves);
+        else if (selectedAnswer) submitAnswer(selectedAnswer);
       }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [feedback, nextQuestion, question?.answerKind, question?.mode, selectedValves, submitAnswer]);
+  }, [feedback, nextQuestion, question, selectedAnswer, selectedValves, submitAnswer]);
 
   if (!question) {
     return <div className="py-8 text-center text-slate-600">{t(settings.language, "preparingPractice")}</div>;
@@ -261,10 +291,13 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   const answered = Boolean(feedback);
   const isSelfCheck = question.mode === "instrument-self-check" || question.mode === "phrase-self-check";
   const progressLabel = config.durationSec === 0 ? `${attempts.length} questions` : formatDuration(remainingSec);
+  const isFingeringQuestion = !isSelfCheck && question.answerKind === "fingering";
+  const selectedAnswerLabel = isFingeringQuestion ? formatValves(selectedValves) : selectedAnswer;
+  const canSubmit = !answered && !paused && !isSelfCheck && (isFingeringQuestion || selectedAnswer.length > 0);
 
   return (
     <div className="space-y-4 py-4">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <section ref={summarySectionRef} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "mode")}</div>
@@ -282,7 +315,18 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         </div>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      {showCompactStatus && (
+        <section className="sticky top-2 z-20 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+          <div className="grid grid-cols-4 items-center gap-2 text-center text-xs text-slate-600 dark:text-slate-300">
+            <div className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</div>
+            <div>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></div>
+            <div>{t(settings.language, "done")} <b className="text-ink dark:text-white">{attempts.length}</b></div>
+            <div>{t(settings.language, "streak")} <b className="text-ink dark:text-white">{currentStreak}</b></div>
+          </div>
+        </section>
+      )}
+
+      <section ref={questionSectionRef} className="scroll-mt-20 space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
         <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t(settings.language, "question")}</div>
         {question.isPhrase && question.notes ? <StaffNote notes={question.notes} highlight={feedback?.result ?? null} language={settings.language} /> : null}
         {!question.isPhrase && question.promptType === "staff" && <StaffNote note={question.note} highlight={feedback?.result ?? null} language={settings.language} />}
@@ -306,10 +350,10 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
             onMark={markSelfCheck}
           />
         )}
-        {!isSelfCheck && question.answerKind === "letter" && <LetterAnswerGrid notes={activeNotes} onAnswer={submitAnswer} disabled={answered || paused} />}
-        {!isSelfCheck && question.answerKind === "solfege" && <SolfegeAnswerGrid notes={activeNotes} onAnswer={submitAnswer} disabled={answered || paused} />}
+        {!isSelfCheck && question.answerKind === "letter" && <LetterAnswerGrid notes={activeNotes} selectedAnswer={selectedAnswer} onSelect={setSelectedAnswer} disabled={answered || paused} />}
+        {!isSelfCheck && question.answerKind === "solfege" && <SolfegeAnswerGrid notes={activeNotes} selectedAnswer={selectedAnswer} onSelect={setSelectedAnswer} disabled={answered || paused} />}
         {!isSelfCheck && question.answerKind === "fingering" && (
-          <ValvePad selected={selectedValves} onChange={setSelectedValves} onSubmit={() => submitAnswer(selectedValves)} disabled={answered || paused} openLabel={t(settings.language, "open")} submitLabel={t(settings.language, "submit")} />
+          <ValvePad selected={selectedValves} onChange={setSelectedValves} disabled={answered || paused} openLabel={t(settings.language, "open")} />
         )}
       </section>
 
@@ -329,15 +373,25 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         />
       )}
 
-      <section className="grid grid-cols-4 gap-3">
-        <button type="button" onClick={() => setShowHint((value) => !value)} className="min-h-12 rounded-lg border border-slate-300 bg-white font-bold text-ink">{t(settings.language, "hint")}</button>
-        <button type="button" onClick={nextQuestion} disabled={!answered} className="min-h-12 rounded-lg bg-ink font-bold text-white">{t(settings.language, "next")}</button>
-        <button type="button" onClick={() => setPaused((value) => !value)} className="min-h-12 rounded-lg border border-slate-300 bg-white font-bold text-ink">{paused ? t(settings.language, "resume") : t(settings.language, "pause")}</button>
-        <button type="button" onClick={finishSession} className="min-h-12 rounded-lg border border-red-300 bg-red-50 font-bold text-red-900">{t(settings.language, "end")}</button>
+      <section className="sticky z-20 bottom-[calc(max(env(safe-area-inset-bottom),0.75rem)+3.8rem)]">
+        <div className="grid grid-cols-[4.75rem_1fr_4.75rem] gap-2 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+          <button type="button" onClick={() => setShowHint((value) => !value)} className="min-h-11 rounded-xl border border-slate-300 bg-white text-sm font-bold text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-white">{t(settings.language, "hint")}</button>
+          {answered ? (
+            <button type="button" onClick={nextQuestion} className="min-h-11 rounded-xl bg-ink text-lg font-bold text-white dark:bg-white dark:text-ink">{t(settings.language, "next")}</button>
+          ) : (
+            <button type="button" onClick={() => submitAnswer(isFingeringQuestion ? selectedValves : selectedAnswer)} disabled={!canSubmit} className="min-h-11 rounded-xl bg-ink text-lg font-bold text-white disabled:bg-slate-400 dark:bg-white dark:text-ink dark:disabled:bg-slate-700">
+              {t(settings.language, "submit")} {selectedAnswerLabel}
+            </button>
+          )}
+          <button type="button" onClick={() => setPaused((value) => !value)} className="min-h-11 rounded-xl border border-slate-300 bg-white text-sm font-bold text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-white">{paused ? t(settings.language, "resume") : t(settings.language, "pause")}</button>
+        </div>
       </section>
 
       {paused && <div className="rounded-lg bg-slate-900 p-4 text-center font-bold text-white">{t(settings.language, "paused")}</div>}
-      <button type="button" onClick={onExit} className="w-full py-2 text-sm font-semibold text-slate-600 dark:text-slate-300">{t(settings.language, "exitWithoutEnding")}</button>
+      <section className="grid grid-cols-2 gap-3 pt-2">
+        <button type="button" onClick={finishSession} className="min-h-12 rounded-lg border border-red-300 bg-red-50 font-bold text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-50">{t(settings.language, "end")}</button>
+        <button type="button" onClick={onExit} className="min-h-12 rounded-lg border border-slate-300 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{t(settings.language, "exitWithoutEnding")}</button>
+      </section>
     </div>
   );
 }

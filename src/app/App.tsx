@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, Attempt, DifficultyLevel, NoteStats, PracticeMode, PracticeSession, SelfCheckPromptType } from "../types";
 import { levels } from "../data/levels";
 import { trainingModes } from "../data/modes";
@@ -16,6 +16,7 @@ import { StatCard } from "../components/StatCard";
 import { percent } from "../utils/stats";
 import { durationName, levelName, modeName, t } from "../i18n";
 import { drillPresets } from "../data/drillPresets";
+import { getLaunchIntent } from "./launchIntent";
 
 type View = "home" | "practiceMenu" | "practice" | "review" | "settings" | "reference";
 type PracticeStartConfig = {
@@ -28,6 +29,7 @@ type PracticeStartConfig = {
 };
 
 export default function App() {
+  const launchIntentHandled = useRef(false);
   const [view, setView] = useState<View>("home");
   const [showHelp, setShowHelp] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
@@ -85,12 +87,12 @@ export default function App() {
     saveSettings(next);
   };
 
-  const navigateTo = (nextView: View) => {
+  const navigateTo = useCallback((nextView: View) => {
     setView(nextView);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  };
+  }, []);
 
-  const startPractice = (config: Partial<typeof practiceConfig> = {}) => {
+  const startPractice = useCallback((config: Partial<typeof practiceConfig> = {}) => {
     setPracticeConfig({
       mode: config.mode ?? settings.defaultMode,
       level: config.level ?? settings.defaultLevel,
@@ -100,7 +102,23 @@ export default function App() {
       selfCheckPromptType: config.selfCheckPromptType
     });
     navigateTo("practice");
-  };
+  }, [navigateTo, settings.defaultLevel, settings.defaultMode, settings.defaultSessionLengthSec]);
+
+  useEffect(() => {
+    if (launchIntentHandled.current) return;
+    launchIntentHandled.current = true;
+
+    const launchIntent = getLaunchIntent(window.location.search);
+    if (!launchIntent) return;
+
+    if (launchIntent === "mixed-practice") {
+      startPractice({ mode: "mixed" });
+    } else {
+      navigateTo("review");
+    }
+
+    window.history.replaceState({}, "", `${window.location.pathname}${window.location.hash}`);
+  }, [navigateTo, startPractice]);
 
   const handleExport = async () => {
     const text = await exportJson();

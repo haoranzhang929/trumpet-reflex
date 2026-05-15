@@ -3,11 +3,12 @@ import { noteAnswerLabel } from "../data/notes";
 
 type Props = {
   notes: Note[];
-  onAnswer: (answer: string) => void;
+  selectedAnswer?: string;
+  onSelect: (answer: string) => void;
   disabled?: boolean;
 };
 
-export function LetterAnswerGrid({ notes, onAnswer, disabled = false }: Props) {
+export function LetterAnswerGrid({ notes, selectedAnswer, onSelect, disabled = false }: Props) {
   const labels = Array.from(new Set(notes.map(noteAnswerLabel)));
   return (
     <div className="grid grid-cols-4 gap-3">
@@ -16,8 +17,12 @@ export function LetterAnswerGrid({ notes, onAnswer, disabled = false }: Props) {
           key={label}
           type="button"
           disabled={disabled}
-          onClick={() => onAnswer(label)}
-          className="min-h-14 rounded-lg border border-slate-300 bg-white text-xl font-bold text-ink active:scale-[0.98] dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+          onClick={() => onSelect(label)}
+          className={`min-h-14 rounded-lg border text-xl font-bold transition active:scale-[0.98] ${
+            selectedAnswer === label
+              ? "border-brass bg-brass text-white shadow-lg"
+              : "border-slate-300 bg-white text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+          }`}
         >
           {label}
         </button>
