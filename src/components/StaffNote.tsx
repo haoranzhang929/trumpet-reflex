@@ -24,24 +24,29 @@ export function StaffNote({ note, notes, showClef = true, size = "large", highli
     const isMulti = displayNotes.length > 1;
     const isPhrase = displayNotes.length > 2;
     const width = size === "large" ? 320 : isMulti ? 310 : 260;
-    const height = size === "large" ? 176 : 156;
+    const height = 192;
     const renderer = new Renderer(container, Renderer.Backends.SVG);
     renderer.resize(width, height);
     const context = renderer.getContext();
-    context.setFillStyle(highlight === "correct" ? "#34C759" : highlight === "wrong" ? "#FF3B30" : "#1D1D1F");
+    const notationColor = highlight === "correct" ? "#34C759" : highlight === "wrong" ? "#FF3B30" : "#1D1D1F";
+    context.setFillStyle("#1D1D1F");
     context.setStrokeStyle("#1D1D1F");
 
     const staveWidth = size === "large" ? (isPhrase ? 286 : 232) : isPhrase ? 270 : isMulti ? 245 : 190;
     const staveX = Math.round((width - staveWidth) / 2);
-    const staveY = size === "large" ? 46 : 40;
+    const staveY = size === "large" ? 34 : 28;
     const stave = new Stave(staveX, staveY, staveWidth);
     if (showClef) stave.addClef("treble");
     stave.setContext(context).draw();
 
     const visibleNotes = displayNotes.map((item) => {
       const staveNote = new StaveNote({ clef: "treble", keys: [item.staff.vexflowKey], duration: "q" });
+      staveNote.setStyle({ fillStyle: notationColor, strokeStyle: notationColor });
+      staveNote.setStemStyle({ fillStyle: notationColor, strokeStyle: notationColor });
       if (item.written.accidental) {
-        staveNote.addModifier(new Accidental(item.written.accidental), 0);
+        const accidental = new Accidental(item.written.accidental);
+        accidental.setStyle({ fillStyle: notationColor, strokeStyle: notationColor });
+        staveNote.addModifier(accidental, 0);
       }
       return staveNote;
     });
