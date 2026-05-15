@@ -27,10 +27,10 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
     <div className="space-y-5 py-4">
       <section>
         <h1 className="text-2xl font-black">{t(settings.language, "settings")}</h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{t(settings.language, "settingsIntro")}</p>
+        <p className="mt-1 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "settingsIntro")}</p>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
         <Select label={t(settings.language, "defaultMode")} value={settings.defaultMode} onChange={(value) => update("defaultMode", value as PracticeMode)}>
           {trainingModes.map((mode) => <option key={mode.id} value={mode.id}>{modeName(mode.id, settings.language)}</option>)}
         </Select>
@@ -76,7 +76,7 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         </Select>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
         <Toggle label={t(settings.language, "autoAdvance")} checked={settings.autoAdvanceCorrect} onChange={(value) => update("autoAdvanceCorrect", value)} />
         <Toggle label={t(settings.language, "hintsAfterWrong")} checked={settings.hintsAfterWrong} onChange={(value) => update("hintsAfterWrong", value)} />
         <Toggle label={t(settings.language, "enableAccidentals")} checked={settings.accidentalsEnabled} onChange={(value) => update("accidentalsEnabled", value)} />
@@ -84,11 +84,11 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         <Toggle label={t(settings.language, "concertPitch")} checked={settings.showConcertPitchReference} onChange={(value) => update("showConcertPitchReference", value)} />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <section className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
         <h2 className="text-lg font-bold">{t(settings.language, "customNoteSet")}</h2>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {notes.map((note) => (
-            <label key={note.id} className="flex items-center gap-2 rounded-lg bg-slate-100 p-3 text-sm font-semibold dark:bg-slate-800">
+            <label key={note.id} className="flex items-center gap-2 rounded-lg bg-[#F5F5F7] p-3 text-sm font-semibold dark:bg-[#2A2A30]">
               <input type="checkbox" checked={settings.selectedNoteIds.includes(note.id)} onChange={() => toggleNote(note.id)} />
               {note.displayName} / {note.solfegeFixedDo}
             </label>
@@ -96,10 +96,10 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         </div>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
         <h2 className="text-lg font-bold">{t(settings.language, "data")}</h2>
-        <button type="button" onClick={onExport} className="min-h-12 w-full rounded-lg bg-ink font-bold text-white dark:bg-white dark:text-ink">{t(settings.language, "exportJson")}</button>
-        <label className="block min-h-12 w-full cursor-pointer rounded-lg border border-slate-300 bg-white p-3 text-center font-bold text-ink dark:bg-slate-800 dark:text-white">
+        <button type="button" onClick={onExport} className="min-h-12 w-full rounded-lg bg-brass font-bold text-white shadow-sm shadow-[#007AFF]/20">{t(settings.language, "exportJson")}</button>
+        <label className="block min-h-12 w-full cursor-pointer rounded-lg border border-black/10 bg-white p-3 text-center font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white">
           {t(settings.language, "importJson")}
           <input
             type="file"
@@ -112,7 +112,7 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
             }}
           />
         </label>
-        <button type="button" onClick={onReset} className="min-h-12 w-full rounded-lg border border-red-300 bg-red-50 font-bold text-red-900">{t(settings.language, "resetAllData")}</button>
+        <button type="button" onClick={onReset} className="min-h-12 w-full rounded-lg border border-[#FF3B30]/25 bg-[#FFF1F0] font-bold text-[#B42318] dark:border-[#FF453A]/35 dark:bg-[#3B1816] dark:text-[#FFB4AE]">{t(settings.language, "resetAllData")}</button>
       </section>
     </div>
   );
@@ -122,7 +122,7 @@ function Select({ label, value, onChange, children }: { label: string; value: st
   return (
     <label className="block text-sm font-semibold">
       {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 text-ink">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-lg border border-black/10 bg-white p-3 text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white">
         {children}
       </select>
     </label>
@@ -154,7 +154,7 @@ function NumberField({
         max={max}
         step={step}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 text-ink"
+        className="mt-1 w-full rounded-lg border border-black/10 bg-white p-3 text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
       />
     </label>
   );
@@ -162,7 +162,7 @@ function NumberField({
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-slate-100 px-3 text-sm font-semibold dark:bg-slate-800">
+    <label className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-[#F5F5F7] px-3 text-sm font-semibold dark:bg-[#2A2A30]">
       {label}
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5" />
     </label>

@@ -16,7 +16,7 @@ type Props = {
 export function FeedbackPanel({ result, note, userAnswer, expectedAnswer, showHint, language = "en", readyMessageKey = "answerReady" }: Props) {
   if (!result) {
     return (
-      <div className="feedback-ready rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
+      <div className="feedback-ready min-h-28 rounded-lg border border-dashed border-black/15 bg-white p-4 text-sm text-[#6E6E73] shadow-sm dark:border-white/15 dark:bg-[#1E1E22] dark:text-[#A1A1AA]">
         {t(language, readyMessageKey)}
       </div>
     );
@@ -28,8 +28,8 @@ export function FeedbackPanel({ result, note, userAnswer, expectedAnswer, showHi
     <div
       className={`${isCorrect ? "feedback-correct" : "feedback-wrong"} rounded-lg border p-4 ${
         isCorrect
-          ? "border-green-300 bg-green-50 text-green-950 dark:border-green-700 dark:bg-green-950 dark:text-green-50"
-          : "border-red-300 bg-red-50 text-red-950 dark:border-red-700 dark:bg-red-950 dark:text-red-50"
+          ? "border-[#34C759]/35 bg-[#F0FFF4] text-[#1D1D1F] dark:bg-[#12351F] dark:text-white"
+          : "border-[#FF3B30]/35 bg-[#FFF2F1] text-[#1D1D1F] dark:bg-[#3B1816] dark:text-white"
       }`}
     >
       <div className="text-lg font-bold">{isCorrect ? t(language, "correct") : t(language, "wrong")}</div>

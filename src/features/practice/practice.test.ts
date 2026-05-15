@@ -8,6 +8,8 @@ import { deriveNoteStats, getProblemPairs, getSlowButCorrectNotes, getSlowestCor
 import { generatePhrase } from "./phraseGenerator";
 import { classifyAttemptSpeed } from "./speedClass";
 import { getNoteExplanation } from "./noteExplanation";
+import { createTodaySessionRoutine } from "./todaySession";
+import { buildPracticeRecommendation, getWeakestMode } from "../review/recommendation";
 import type { Attempt, NoteStats, Question } from "../../types";
 import { median } from "../../utils/stats";
 
@@ -161,6 +163,22 @@ describe("session stats", () => {
     expect(getSlowestCorrectNotes(attempts, 1)[0]?.noteId).toBe("f4");
   });
 
+  it("prioritizes weak notes by recent misses and slow correct answers", () => {
+    const stats = deriveNoteStats([
+      ...attempts,
+      { id: "6", sessionId: "s", questionMode: "staff-fingering", noteId: "bb4", shownPromptType: "staff", expectedAnswer: "1", userAnswer: "2", isCorrect: false, reactionMs: 2500, speedClass: "wrong", createdAt: Date.now() }
+    ]);
+    expect(stats.find((stat) => stat.noteId === "bb4")?.weaknessScore).toBeGreaterThan(0);
+  });
+
+  it("builds an actionable recommendation from the latest session", () => {
+    expect(getWeakestMode(attempts)).toBe("staff-letter");
+    const stats = deriveNoteStats(attempts, 5);
+    const recommendation = buildPracticeRecommendation(attempts, [{ id: "s", startedAt: 1, mode: "mixed", level: "natural-c-to-c", totalQuestions: 5, correctCount: 3, averageReactionMs: 4400, medianReactionMs: 5000, maxStreak: 2 }], stats);
+    expect(recommendation.sessionAccuracy).toBe(60);
+    expect(recommendation.copy).toContain("Next:");
+  });
+
   it("classifies speed and detects repeated wrong-answer pairs", () => {
     expect(classifyAttemptSpeed(true, 1000, { veryFastThresholdMs: 1500, slowThresholdMs: 3000 })).toBe("fast-correct");
     expect(classifyAttemptSpeed(true, 5000, { veryFastThresholdMs: 1500, slowThresholdMs: 3000 })).toBe("slow-correct");
@@ -176,5 +194,15 @@ describe("drill presets", () => {
   it("provides targeted presets without adding self-check modes to mixed mode", () => {
     expect(drillPresets.some((preset) => preset.id === "enharmonic-awareness")).toBe(true);
     expect(drillPresets.every((preset) => preset.noteIds.length > 0)).toBe(true);
+  });
+});
+
+describe("today session routine", () => {
+  it("generates the fixed 10-minute routine from existing modes", () => {
+    const routine = createTodaySessionRoutine("natural-c-to-c");
+    expect(routine).toHaveLength(5);
+    expect(routine.map((step) => step.mode)).toEqual(["staff-letter", "letter-fingering", "staff-fingering", "instrument-self-check", "staff-fingering"]);
+    expect(routine.every((step) => step.durationSec === 120)).toBe(true);
+    expect(routine[4].weakOnly).toBe(true);
   });
 });

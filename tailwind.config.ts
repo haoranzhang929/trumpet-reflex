@@ -6,10 +6,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#1d1d1f",
-        paper: "#f5f5f7",
-        brass: "#0071e3",
-        reed: "#248a3d"
+        ink: "#1D1D1F",
+        paper: "#F5F5F7",
+        brass: "#007AFF",
+        reed: "#34C759"
       }
     }
   },

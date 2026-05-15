@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AppSettings, Attempt, DifficultyLevel, NoteStats, PracticeMode, PracticeSession, Question, SelfCheckPromptType, Valve } from "../../types";
+import type { AppSettings, Attempt, DifficultyLevel, NoteStats, PracticeDurationSec, PracticeMode, PracticeSession, Question, SelfCheckPromptType, Valve } from "../../types";
 import { getNotesForLevel } from "../../data/levels";
 import { formatValves, getNoteById } from "../../data/notes";
 import { addAttempt, putSession } from "../../storage/db";
@@ -20,10 +20,13 @@ import { getNoteExplanation } from "./noteExplanation";
 type PracticeConfig = {
   mode: PracticeMode;
   level: DifficultyLevel;
-  durationSec: 0 | 180 | 300 | 600;
+  durationSec: PracticeDurationSec;
   weakOnly?: boolean;
   selectedNoteIds?: string[];
   selfCheckPromptType?: SelfCheckPromptType;
+  routineTitle?: string;
+  routineStep?: number;
+  routineTotal?: number;
 };
 
 type Props = {
@@ -272,7 +275,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   }, [feedback, nextQuestion, question, selectedAnswer, selectedValves, submitAnswer]);
 
   if (!question) {
-    return <div className="py-8 text-center text-slate-600">{t(settings.language, "preparingPractice")}</div>;
+    return <div className="py-8 text-center text-[#6E6E73]">{t(settings.language, "preparingPractice")}</div>;
   }
 
   const answered = Boolean(feedback);
@@ -284,49 +287,58 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
   return (
     <div className="space-y-4 py-4">
-      <section className="sticky top-2 z-40 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
+      <section className="routine-strip sticky top-2 z-40 rounded-lg border border-black/10 px-3 py-2 shadow-lg backdrop-blur dark:border-white/10">
         <button
           type="button"
           onClick={() => setStatusExpanded((value) => !value)}
           aria-expanded={statusExpanded}
           aria-label={t(settings.language, statusExpanded ? "collapseStatus" : "expandStatus")}
-          className="grid w-full grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 rounded-xl px-1 py-1 text-center text-xs text-slate-600 transition active:scale-[0.99] active:bg-slate-100 dark:text-slate-300 dark:active:bg-slate-800"
+          className="grid w-full grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 rounded-lg px-1 py-1 text-center text-xs text-[#6E6E73] transition active:scale-[0.99] active:bg-black/5 dark:text-[#A1A1AA] dark:active:bg-white/10"
         >
-          <span className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</span>
-          <span>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></span>
-          <span>{t(settings.language, "done")} <b className="text-ink dark:text-white">{attempts.length}</b></span>
-          <span>{t(settings.language, "streak")} <b className="text-ink dark:text-white">{currentStreak}</b></span>
-          <span aria-hidden="true" className={`text-base leading-none text-slate-500 transition-transform dark:text-slate-300 ${statusExpanded ? "rotate-180" : ""}`}>⌄</span>
+          <span className="truncate text-left font-bold text-[#1D1D1F] dark:text-white">{config.routineTitle ?? modeName(config.mode, settings.language)}</span>
+          <span>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-[#1D1D1F] dark:text-white">{progressLabel}</b></span>
+          <span>{t(settings.language, "done")} <b className="text-[#1D1D1F] dark:text-white">{attempts.length}</b></span>
+          <span>{t(settings.language, "streak")} <b className="text-[#1D1D1F] dark:text-white">{currentStreak}</b></span>
+          <span aria-hidden="true" className={`text-base leading-none text-brass transition-transform ${statusExpanded ? "rotate-180" : ""}`}>⌄</span>
         </button>
         {statusExpanded && (
-          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 text-sm dark:border-slate-700">
-            <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "mode")}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-black/10 pt-3 text-sm text-[#1D1D1F] dark:border-white/10 dark:text-white">
+            <div className="rounded-lg bg-[#F5F5F7] p-2 dark:bg-[#2A2A30]">
+              <div className="text-xs uppercase text-[#86868B] dark:text-[#A1A1AA]">{t(settings.language, "mode")}</div>
               <div className="font-bold">{modeName(config.mode, settings.language)} {config.weakOnly ? `· ${t(settings.language, "weakNotes")}` : ""}</div>
             </div>
-            <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
-              <div className="text-xs uppercase tracking-wide text-slate-500">{t(settings.language, "level")}</div>
+            <div className="rounded-lg bg-[#F5F5F7] p-2 dark:bg-[#2A2A30]">
+              <div className="text-xs uppercase text-[#86868B] dark:text-[#A1A1AA]">{t(settings.language, "level")}</div>
               <div className="font-bold">{levelName(config.level, settings.language)}</div>
             </div>
+            {config.routineStep && config.routineTotal ? (
+              <div className="col-span-2 rounded-lg bg-[#F5F5F7] p-2 dark:bg-[#2A2A30]">
+                <div className="text-xs uppercase text-[#86868B] dark:text-[#A1A1AA]">{t(settings.language, "todaysSession")}</div>
+                <div className="font-bold">{t(settings.language, "routineStepProgress").replace("{current}", String(config.routineStep)).replace("{total}", String(config.routineTotal))}</div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>
 
-      <section ref={questionSectionRef} className="scroll-mt-20 space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t(settings.language, "question")}</div>
+      <section ref={questionSectionRef} className={`ivory-texture scroll-mt-20 space-y-3 rounded-lg border bg-white p-4 text-[#1D1D1F] shadow-xl dark:bg-[#1E1E22] dark:text-white ${feedback?.result === "correct" ? "border-[#34C759]" : feedback?.result === "wrong" ? "border-[#FF3B30]" : "border-black/10 dark:border-white/10"}`}>
+        <div className="flex items-center justify-between gap-3 text-sm font-semibold text-[#6E6E73] dark:text-[#A1A1AA]">
+          <span>{t(settings.language, "question")}</span>
+          {config.routineStep && config.routineTotal ? <span>{config.routineStep}/{config.routineTotal}</span> : null}
+        </div>
         {question.isPhrase && question.notes ? <StaffNote notes={question.notes} highlight={feedback?.result ?? null} language={settings.language} /> : null}
         {!question.isPhrase && question.promptType === "staff" && <StaffNote note={question.note} highlight={feedback?.result ?? null} language={settings.language} />}
         {question.promptType === "letter" && <PromptText>{question.note.displayName}</PromptText>}
         {question.promptType === "solfege" && <PromptText>{question.note.solfegeFixedDo}</PromptText>}
         {question.promptType === "fingering" && <PromptText>{formatValves(question.note.valves)}</PromptText>}
         {showHint && (
-          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-50">
+          <div className="rounded-lg border border-[#007AFF]/20 bg-[#EAF3FF] p-3 text-sm text-[#0B3D73] dark:border-[#60A5FA]/25 dark:bg-[#123255] dark:text-[#D9ECFF]">
             {t(settings.language, "hint")}: {staffHint(question.note, settings.language)}. {t(settings.language, "fingering")} {formatValves(question.note.valves)}.
           </div>
         )}
       </section>
 
-      <section className="space-y-3">
+      <section className="answer-surface space-y-3 rounded-lg border border-black/10 p-3 shadow-xl dark:border-white/10">
         {isSelfCheck && (
           <SelfCheckControls
             revealed={revealed}
@@ -360,23 +372,23 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       )}
 
       <section className="sticky z-20 bottom-[calc(max(env(safe-area-inset-bottom),0.75rem)+3.8rem)]">
-        <div className="grid grid-cols-[4.75rem_1fr_4.75rem] gap-2 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-950/90">
-          <button type="button" onClick={() => setShowHint((value) => !value)} className="min-h-11 rounded-xl border border-slate-300 bg-white text-sm font-bold text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-white">{t(settings.language, "hint")}</button>
+        <div className="grid grid-cols-[4.75rem_1fr_4.75rem] gap-2 rounded-2xl border border-black/10 bg-white/90 p-2 shadow-xl backdrop-blur dark:border-white/10 dark:bg-[#1E1E22]/90">
+          <button type="button" onClick={() => setShowHint((value) => !value)} className="min-h-11 rounded-xl border border-black/10 bg-white text-sm font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white">{t(settings.language, "hint")}</button>
           {answered ? (
-            <button type="button" onClick={nextQuestion} className="min-h-11 rounded-xl bg-ink text-lg font-bold text-white dark:bg-white dark:text-ink">{t(settings.language, "next")}</button>
+            <button type="button" onClick={nextQuestion} className="min-h-11 rounded-xl bg-brass text-lg font-bold text-white shadow-sm shadow-[#007AFF]/20">{t(settings.language, "next")}</button>
           ) : (
-            <button type="button" onClick={() => submitAnswer(isFingeringQuestion ? selectedValves : selectedAnswer)} disabled={!canSubmit} className="min-h-11 rounded-xl bg-ink text-lg font-bold text-white disabled:bg-slate-400 dark:bg-white dark:text-ink dark:disabled:bg-slate-700">
+            <button type="button" onClick={() => submitAnswer(isFingeringQuestion ? selectedValves : selectedAnswer)} disabled={!canSubmit} className="min-h-11 rounded-xl bg-brass text-lg font-bold text-white shadow-sm shadow-[#007AFF]/20 disabled:bg-[#D1D1D6] disabled:text-[#86868B] disabled:shadow-none dark:disabled:bg-[#3A3A3C] dark:disabled:text-[#8E8E93]">
               {t(settings.language, "submit")} {selectedAnswerLabel}
             </button>
           )}
-          <button type="button" onClick={() => setPaused((value) => !value)} className="min-h-11 rounded-xl border border-slate-300 bg-white text-sm font-bold text-ink dark:border-slate-700 dark:bg-slate-900 dark:text-white">{paused ? t(settings.language, "resume") : t(settings.language, "pause")}</button>
+          <button type="button" onClick={() => setPaused((value) => !value)} className="min-h-11 rounded-xl border border-black/10 bg-white text-sm font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white">{paused ? t(settings.language, "resume") : t(settings.language, "pause")}</button>
         </div>
       </section>
 
-      {paused && <div className="rounded-lg bg-slate-900 p-4 text-center font-bold text-white">{t(settings.language, "paused")}</div>}
+      {paused && <div className="rounded-lg border border-black/10 bg-[#1D1D1F] p-4 text-center font-bold text-white dark:border-white/10 dark:bg-[#2A2A30]">{t(settings.language, "paused")}</div>}
       <section className="grid grid-cols-2 gap-3 pt-2">
-        <button type="button" onClick={finishSession} className="min-h-12 rounded-lg border border-red-300 bg-red-50 font-bold text-red-900 dark:border-red-700 dark:bg-red-950 dark:text-red-50">{t(settings.language, "end")}</button>
-        <button type="button" onClick={onExit} className="min-h-12 rounded-lg border border-slate-300 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{t(settings.language, "exitWithoutEnding")}</button>
+        <button type="button" onClick={finishSession} className="min-h-12 rounded-lg border border-[#FF3B30]/25 bg-[#FFF1F0] font-bold text-[#B42318] dark:border-[#FF453A]/35 dark:bg-[#3B1816] dark:text-[#FFB4AE]">{t(settings.language, "end")}</button>
+        <button type="button" onClick={onExit} className="min-h-12 rounded-lg border border-black/10 bg-white font-semibold text-[#6E6E73] dark:border-white/10 dark:bg-[#1E1E22] dark:text-[#A1A1AA]">{t(settings.language, "exitWithoutEnding")}</button>
       </section>
     </div>
   );
@@ -384,7 +396,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
 function PromptText({ children }: { children: string }) {
   return (
-    <div className="flex min-h-44 items-center justify-center rounded-lg bg-slate-100 text-6xl font-black dark:bg-slate-800">
+    <div className="flex min-h-48 items-center justify-center rounded-lg bg-[#FBFBFD] text-6xl font-black text-[#1D1D1F] shadow-inner ring-1 ring-black/10 dark:bg-[#2A2A30] dark:text-white dark:ring-white/10">
       {children}
     </div>
   );
@@ -406,15 +418,15 @@ function SelfCheckControls({
   return (
     <div className="space-y-3">
       {!revealed ? (
-        <button type="button" onClick={onReveal} className="min-h-14 w-full rounded-lg bg-ink text-lg font-bold text-white dark:bg-white dark:text-ink">
+        <button type="button" onClick={onReveal} className="min-h-14 w-full rounded-lg bg-brass text-lg font-bold text-white shadow-sm shadow-[#007AFF]/20">
           {t(language, "revealAnswer")}
         </button>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" disabled={answered} onClick={() => onMark(true)} className="min-h-14 rounded-lg bg-green-700 text-lg font-bold text-white">
+          <button type="button" disabled={answered} onClick={() => onMark(true)} className="min-h-14 rounded-lg bg-[#34C759] text-lg font-bold text-white disabled:opacity-55">
             {t(language, "gotItRight")}
           </button>
-          <button type="button" disabled={answered} onClick={() => onMark(false)} className="min-h-14 rounded-lg bg-red-700 text-lg font-bold text-white">
+          <button type="button" disabled={answered} onClick={() => onMark(false)} className="min-h-14 rounded-lg bg-[#FF3B30] text-lg font-bold text-white disabled:opacity-55">
             {t(language, "gotItWrong")}
           </button>
         </div>
@@ -425,7 +437,7 @@ function SelfCheckControls({
 
 function PhraseAnswerPanel({ notes, language }: { notes: NonNullable<Question["notes"]>; language: AppSettings["language"] }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm leading-7 dark:border-slate-700 dark:bg-slate-900">
+    <div className="rounded-lg border border-black/10 bg-white p-4 text-sm leading-7 dark:border-white/10 dark:bg-[#1E1E22]">
       <div><b>{t(language, "notesLabel")}:</b> {notes.map((note) => note.displayName).join(" ")}</div>
       <div><b>{t(language, "solfegeLabel")}:</b> {notes.map((note) => note.solfegeFixedDo).join(" ")}</div>
       <div><b>{t(language, "fingeringsLabel")}:</b> {notes.map((note) => formatValves(note.valves)).join(" ")}</div>
@@ -436,7 +448,7 @@ function PhraseAnswerPanel({ notes, language }: { notes: NonNullable<Question["n
 function SelfCheckAnswerPanel({ note, language }: { note: Question["note"]; language: AppSettings["language"] }) {
   const explanation = getNoteExplanation(note, language);
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm leading-7 dark:border-slate-700 dark:bg-slate-900">
+    <div className="rounded-lg border border-black/10 bg-white p-4 text-sm leading-7 dark:border-white/10 dark:bg-[#1E1E22]">
       <div><b>{note.displayName}</b> / {note.solfegeFixedDo} · {t(language, "fingering")} {formatValves(note.valves)}</div>
       <div><b>{t(language, "staff")}:</b> {explanation.staffLocation}</div>
       <div>{explanation.landmarkHint}.</div>

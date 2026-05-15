@@ -28,10 +28,10 @@ export function StaffNote({ note, notes, showClef = true, size = "large", highli
     const renderer = new Renderer(container, Renderer.Backends.SVG);
     renderer.resize(width, height);
     const context = renderer.getContext();
-    context.setFillStyle(highlight === "correct" ? "#166534" : highlight === "wrong" ? "#991b1b" : "#111827");
-    context.setStrokeStyle("#111827");
+    context.setFillStyle(highlight === "correct" ? "#34C759" : highlight === "wrong" ? "#FF3B30" : "#1D1D1F");
+    context.setStrokeStyle("#1D1D1F");
 
-    const staveWidth = size === "large" ? (isPhrase ? 280 : 220) : isPhrase ? 270 : isMulti ? 245 : 190;
+    const staveWidth = size === "large" ? (isPhrase ? 286 : 232) : isPhrase ? 270 : isMulti ? 245 : 190;
     const staveX = Math.round((width - staveWidth) / 2);
     const staveY = size === "large" ? 46 : 40;
     const stave = new Stave(staveX, staveY, staveWidth);
@@ -52,7 +52,7 @@ export function StaffNote({ note, notes, showClef = true, size = "large", highli
     };
     const tickables = isMulti ? visibleNotes : [makeSpacer(), visibleNotes[0], makeSpacer()];
     const voice = new Voice({ numBeats: tickables.length, beatValue: 4 }).addTickables(tickables);
-    new Formatter().joinVoices([voice]).format([voice], staveWidth - 78);
+    new Formatter().joinVoices([voice]).format([voice], staveWidth - (isPhrase ? 64 : 88));
     voice.draw(context, stave);
   }, [displayNotes, highlight, showClef, size]);
 
@@ -61,7 +61,7 @@ export function StaffNote({ note, notes, showClef = true, size = "large", highli
     : `${t(language, "staffNoteAria")} ${displayNotes[0]?.displayName ?? ""}`;
 
   return (
-    <div className="flex h-44 w-full items-center justify-center overflow-hidden rounded-lg bg-white shadow-inner ring-1 ring-black/5 dark:bg-slate-100">
+    <div className="flex h-48 w-full items-center justify-center overflow-hidden rounded-lg bg-[#FBFBFD] shadow-inner ring-1 ring-black/10 dark:bg-[#F5F5F7] dark:ring-white/10">
       <div ref={containerRef} aria-label={ariaLabel} />
     </div>
   );

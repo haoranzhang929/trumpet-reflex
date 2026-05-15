@@ -14,8 +14,8 @@ export default defineConfig({
         description: "B flat trumpet written-pitch notation, solfege, and fingering reflex trainer.",
         start_url: "/",
         display: "standalone",
-        theme_color: "#111827",
-        background_color: "#fffaf0",
+        theme_color: "#11100E",
+        background_color: "#11100E",
         icons: [
           { src: "/icons/pwa-64x64.png", sizes: "64x64", type: "image/png" },
           { src: "/icons/pwa-192x192.png", sizes: "192x192", type: "image/png" },
@@ -25,7 +25,8 @@ export default defineConfig({
         ],
         shortcuts: [
           { name: "Start Mixed Drill", url: "/?mode=mixed" },
-          { name: "Weak Notes", url: "/?view=weak-notes" }
+          { name: "Weak Notes", url: "/?view=weak-notes" },
+          { name: "Common Accidentals", url: "/?preset=common-trumpet-accidentals" }
         ]
       },
       workbox: {

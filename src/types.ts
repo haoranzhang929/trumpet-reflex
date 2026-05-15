@@ -139,6 +139,8 @@ export type AppSettings = {
   slowThresholdMs: number;
 };
 
+export type PracticeDurationSec = 0 | 120 | 180 | 300 | 600;
+
 export type QuestionGenerationOptions = {
   mode: PracticeMode;
   level: DifficultyLevel;

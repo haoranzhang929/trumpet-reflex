@@ -21,7 +21,7 @@ export function LetterAnswerGrid({ notes, selectedAnswer, onSelect, disabled = f
           className={`min-h-14 rounded-lg border text-xl font-bold transition active:scale-[0.98] ${
             selectedAnswer === label
               ? "border-brass bg-brass text-white shadow-lg"
-              : "border-slate-300 bg-white text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              : "border-black/10 bg-white text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
           }`}
         >
           {label}

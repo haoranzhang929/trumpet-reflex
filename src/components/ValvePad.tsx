@@ -27,7 +27,7 @@ export function ValvePad({ selected, onChange, disabled = false, openLabel = "Op
               className={`min-h-20 rounded-lg border text-3xl font-bold transition active:scale-[0.98] ${
                 isSelected
                   ? "border-brass bg-brass text-white shadow-lg"
-                  : "border-slate-300 bg-white text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  : "border-black/10 bg-white text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
               }`}
             >
               {valve}
@@ -40,7 +40,7 @@ export function ValvePad({ selected, onChange, disabled = false, openLabel = "Op
           type="button"
           disabled={disabled}
           onClick={() => onChange([])}
-          className="min-h-14 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+          className="min-h-14 rounded-lg border border-black/10 bg-white text-lg font-semibold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
         >
           {openLabel}
         </button>
