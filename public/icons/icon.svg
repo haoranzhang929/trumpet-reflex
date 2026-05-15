@@ -1,9 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#111827"/>
-  <circle cx="162" cy="256" r="48" fill="#b7791f"/>
-  <circle cx="256" cy="256" r="48" fill="#f6d365"/>
-  <circle cx="350" cy="256" r="48" fill="#b7791f"/>
-  <path d="M96 154h244c38 0 69 31 69 69v66c0 38-31 69-69 69H96" fill="none" stroke="#fffaf0" stroke-width="34" stroke-linecap="round"/>
-  <path d="M401 206h42c25 0 45 20 45 45s-20 45-45 45h-42" fill="none" stroke="#fffaf0" stroke-width="30" stroke-linecap="round"/>
-  <path d="M120 116v280" stroke="#fffaf0" stroke-width="26" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Trumpet Reflex">
+  <defs>
+    <linearGradient id="tile" x1="96" y1="48" x2="416" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A2A30"/>
+      <stop offset="0.48" stop-color="#111113"/>
+      <stop offset="1" stop-color="#050507"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="96" y1="72" x2="416" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5AC8FA"/>
+      <stop offset="0.52" stop-color="#007AFF"/>
+      <stop offset="1" stop-color="#93C5FD"/>
+    </linearGradient>
+    <linearGradient id="note" x1="174" y1="140" x2="346" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#EAF3FF"/>
+      <stop offset="1" stop-color="#93C5FD"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+    <filter id="blueGlow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#007AFF" flood-opacity="0.62"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+  <path d="M112 52h210c76 0 138 62 138 138v210" fill="none" stroke="url(#beam)" stroke-width="18" stroke-linecap="round" opacity="0.95" filter="url(#blueGlow)"/>
+  <path d="M82 146h348M82 188h348M82 230h348M82 272h348M82 314h348" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.16"/>
+  <g filter="url(#softShadow)">
+    <path d="M290 132v184c0 44-39 82-87 82-36 0-62-20-62-48 0-34 37-63 82-63 16 0 31 3 43 10V132h24Z" fill="url(#note)"/>
+    <path d="M290 132h82" stroke="url(#note)" stroke-width="24" stroke-linecap="round"/>
+    <ellipse cx="206" cy="347" rx="58" ry="38" transform="rotate(-20 206 347)" fill="#007AFF"/>
+    <ellipse cx="206" cy="347" rx="37" ry="23" transform="rotate(-20 206 347)" fill="#EAF3FF" opacity="0.96"/>
+  </g>
+  <path d="M148 103c29-24 75-35 117-20" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.24"/>
 </svg>
