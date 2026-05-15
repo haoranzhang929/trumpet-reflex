@@ -228,12 +228,13 @@ nav.fixed .nav-practice-tab {
 
 .nav-practice-tab::before {
   position: absolute;
+  z-index: 0;
   top: 50%;
   left: 50%;
-  width: 34px;
-  height: 140px;
+  width: 28px;
+  height: 124px;
   content: "";
-  background: linear-gradient(90deg, transparent, #5ac8fa 20%, #ffffff 50%, #007aff 80%, transparent);
+  background: linear-gradient(90deg, transparent, rgb(90 200 250 / 0.72) 22%, rgb(255 255 255 / 0.88) 50%, rgb(0 122 255 / 0.72) 78%, transparent);
   transform: translate(-50%, -50%);
   animation: nav-border-beam 4.8s linear infinite;
 }
@@ -244,7 +245,9 @@ nav.fixed .nav-practice-tab {
   z-index: 0;
   border-radius: 7px;
   content: "";
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.84), rgb(255 255 255 / 0.72));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 255 255 / 0.90)),
+    #ffffff;
 }
 
 .dark .nav-practice-tab {
