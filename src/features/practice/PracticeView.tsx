@@ -289,12 +289,14 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
           type="button"
           onClick={() => setStatusExpanded((value) => !value)}
           aria-expanded={statusExpanded}
-          className="grid w-full grid-cols-4 items-center gap-2 text-center text-xs text-slate-600 dark:text-slate-300"
+          aria-label={t(settings.language, statusExpanded ? "collapseStatus" : "expandStatus")}
+          className="grid w-full grid-cols-[1fr_auto_auto_auto_auto] items-center gap-2 rounded-xl px-1 py-1 text-center text-xs text-slate-600 transition active:scale-[0.99] active:bg-slate-100 dark:text-slate-300 dark:active:bg-slate-800"
         >
           <span className="truncate text-left font-bold text-ink dark:text-white">{modeName(config.mode, settings.language)}</span>
           <span>{config.durationSec === 0 ? t(settings.language, "progress") : t(settings.language, "timer")} <b className="font-mono text-ink dark:text-white">{progressLabel}</b></span>
           <span>{t(settings.language, "done")} <b className="text-ink dark:text-white">{attempts.length}</b></span>
           <span>{t(settings.language, "streak")} <b className="text-ink dark:text-white">{currentStreak}</b></span>
+          <span aria-hidden="true" className={`text-base leading-none text-slate-500 transition-transform dark:text-slate-300 ${statusExpanded ? "rotate-180" : ""}`}>⌄</span>
         </button>
         {statusExpanded && (
           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 text-sm dark:border-slate-700">
