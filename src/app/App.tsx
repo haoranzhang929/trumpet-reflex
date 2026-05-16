@@ -16,6 +16,7 @@ import { durationName, levelName, modeName, t } from "../i18n";
 import { drillPresets } from "../data/drillPresets";
 import { getLaunchIntent } from "./launchIntent";
 import { createTodaySessionRoutine, type TodaySessionStep } from "../features/practice/todaySession";
+import { buildProgressionSummary, type ProgressionSummary } from "../features/practice/progression";
 
 type View = "home" | "practiceMenu" | "practice" | "review" | "settings" | "reference";
 type PracticeStartConfig = {
@@ -25,6 +26,7 @@ type PracticeStartConfig = {
   weakOnly?: boolean;
   selectedNoteIds?: string[];
   selfCheckPromptType?: SelfCheckPromptType;
+  routineStepId?: string;
 };
 
 export default function App() {
@@ -42,6 +44,7 @@ export default function App() {
     selectedNoteIds?: string[];
     selfCheckPromptType?: SelfCheckPromptType;
     routineTitle?: string;
+    routineStepId?: string;
     routineStep?: number;
     routineTotal?: number;
   }>({
@@ -83,6 +86,7 @@ export default function App() {
 
   const noteStats = useMemo(() => deriveNoteStats(attempts), [attempts]);
   const weakNotes = useMemo(() => getWeakNotes(noteStats), [noteStats]);
+  const progression = useMemo(() => buildProgressionSummary(attempts, noteStats), [attempts, noteStats]);
   const lastSession = [...sessions].reverse().find((session) => session.totalQuestions > 0);
   const totalCorrect = attempts.filter((attempt) => attempt.isCorrect).length;
 
@@ -107,6 +111,7 @@ export default function App() {
       selectedNoteIds: config.selectedNoteIds,
       selfCheckPromptType: config.selfCheckPromptType,
       routineTitle: config.routineTitle,
+      routineStepId: config.routineStepId,
       routineStep: config.routineStep,
       routineTotal: config.routineTotal
     });
@@ -114,7 +119,7 @@ export default function App() {
   }, [navigateTo, settings.defaultLevel, settings.defaultMode, settings.defaultSessionLengthSec]);
 
   const startTodaySession = useCallback(() => {
-    const routine = createTodaySessionRoutine(settings.defaultLevel);
+    const routine = createTodaySessionRoutine(progression.recommendedLevel);
     const firstStep = routine[0];
     setTodayRoutine(routine);
     setTodayRoutineIndex(0);
@@ -125,11 +130,12 @@ export default function App() {
       weakOnly: firstStep.weakOnly ?? false,
       selfCheckPromptType: firstStep.selfCheckPromptType,
       routineTitle: t(settings.language, firstStep.titleKey),
+      routineStepId: firstStep.id,
       routineStep: 1,
       routineTotal: routine.length
     });
     navigateTo("practice");
-  }, [navigateTo, settings.defaultLevel, settings.language]);
+  }, [navigateTo, progression.recommendedLevel, settings.language]);
 
   const continueTodaySession = useCallback(() => {
     if (!todayRoutine) return false;
@@ -148,6 +154,7 @@ export default function App() {
       weakOnly: nextStep.weakOnly ?? false,
       selfCheckPromptType: nextStep.selfCheckPromptType,
       routineTitle: t(settings.language, nextStep.titleKey),
+      routineStepId: nextStep.id,
       routineStep: nextIndex + 1,
       routineTotal: todayRoutine.length
     });
@@ -224,6 +231,7 @@ export default function App() {
               totalQuestions={attempts.length}
               totalAccuracy={percent(totalCorrect, attempts.length)}
               weakNotes={weakNotes}
+              progression={progression}
               startPractice={startPractice}
               startTodaySession={startTodaySession}
               setView={navigateTo}
@@ -412,6 +420,7 @@ function HomeView({
   totalQuestions,
   totalAccuracy,
   weakNotes,
+  progression,
   startPractice,
   startTodaySession,
   setView,
@@ -422,22 +431,28 @@ function HomeView({
   totalQuestions: number;
   totalAccuracy: number;
   weakNotes: NoteStats[];
+  progression: ProgressionSummary;
   startPractice: (config?: PracticeStartConfig) => void;
   startTodaySession: () => void;
   setView: (view: View) => void;
   openHelp: () => void;
 }) {
+  const [pathExpanded, setPathExpanded] = useState(false);
+  const recommendedProgress = progression.levels.find((item) => item.level === progression.recommendedLevel);
+
   return (
     <div className="space-y-5 py-4">
       <section className="cult-texture space-y-5 rounded-lg border border-black/10 bg-white p-5 text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
         <div>
-          <h1 className="text-3xl font-black leading-tight">Trumpet Reflex</h1>
+          <h1 className="text-3xl font-black leading-tight">{t(settings.language, "homeHeroTitle")}</h1>
           <p className="mt-2 text-base font-semibold text-[#1D1D1F] dark:text-white">{t(settings.language, "homeValueProp")}</p>
           <p className="mt-1 text-sm leading-6 text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "homeReflexChain")}</p>
         </div>
         <button type="button" onClick={startTodaySession} className="brass-animate-button min-h-16 w-full overflow-hidden rounded-lg px-4 py-3 text-left text-lg font-black leading-tight text-white shadow-lg shadow-[#007AFF]/20">
           <span className="block max-w-full text-wrap break-words">{t(settings.language, "startTodaySession")}</span>
-          <span className="mt-1 block max-w-full text-wrap break-words text-sm font-medium leading-snug text-white/82">{t(settings.language, "todaySessionSubcopy")}</span>
+          <span className="mt-1 block max-w-full text-wrap break-words text-sm font-medium leading-snug text-white/82">
+            {t(settings.language, "todaySessionSubcopy")} · {levelName(progression.recommendedLevel, settings.language)}
+          </span>
         </button>
       </section>
 
@@ -479,6 +494,77 @@ function HomeView({
         )}
       </section>
 
+      <section className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-black">{t(settings.language, "learningPath")}</h2>
+            <p className="mt-1 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">
+              {t(settings.language, "recommendedLevel")}: {levelName(progression.recommendedLevel, settings.language)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => startPractice({ mode: "mixed", level: progression.recommendedLevel, durationSec: 600 })}
+            className="min-h-11 rounded-lg bg-brass px-3 text-sm font-bold text-white"
+          >
+            {t(settings.language, "trainThisLevel")}
+          </button>
+        </div>
+        {recommendedProgress ? (
+          <div className="mt-3 rounded-lg bg-[#F5F5F7] p-3 text-sm dark:bg-[#2A2A30]">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-bold">{levelName(recommendedProgress.level, settings.language)}</span>
+              <span className="text-xs font-bold text-[#6E6E73] dark:text-[#A1A1AA]">{recommendedProgress.accuracy}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div
+                className="h-full rounded-full bg-brass"
+                style={{ width: `${Math.min(100, Math.round((recommendedProgress.attemptedNotes / recommendedProgress.totalNotes) * 100))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#6E6E73] dark:text-[#A1A1AA]">
+              {recommendedProgress.attemptedNotes}/{recommendedProgress.totalNotes} {t(settings.language, "notesLabel")} · {recommendedProgress.totalAttempts} {t(settings.language, "questions")}
+            </p>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setPathExpanded((value) => !value)}
+          className="mt-3 min-h-10 w-full rounded-lg border border-black/10 bg-white text-sm font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
+        >
+          {pathExpanded ? t(settings.language, "hideLearningPath") : t(settings.language, "showLearningPath")}
+        </button>
+        {pathExpanded && (
+          <div className="mt-3 grid gap-2">
+            {progression.levels.map((item, index) => (
+              <button
+                key={item.level}
+                type="button"
+                onClick={() => startPractice({ mode: "mixed", level: item.level, durationSec: 300 })}
+                className={`grid grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-lg p-3 text-left ${
+                  item.level === progression.recommendedLevel
+                    ? "bg-[#EAF3FF] text-[#1D1D1F] ring-1 ring-[#007AFF]/25 dark:bg-[#17304D] dark:text-white"
+                    : "bg-[#F5F5F7] text-[#1D1D1F] dark:bg-[#2A2A30] dark:text-white"
+                }`}
+              >
+                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-black ${item.isMastered ? "bg-[#34C759] text-white" : "bg-white text-[#6E6E73] dark:bg-[#1E1E22] dark:text-[#A1A1AA]"}`}>
+                  {item.isMastered ? "✓" : index + 1}
+                </span>
+                <span>
+                  <span className="block font-bold">{levelName(item.level, settings.language)}</span>
+                  <span className="block text-xs text-[#6E6E73] dark:text-[#A1A1AA]">
+                    {item.attemptedNotes}/{item.totalNotes} {t(settings.language, "notesLabel")} · {item.totalAttempts} {t(settings.language, "questions")} · {item.accuracy}%
+                  </span>
+                </span>
+                <span className="text-xs font-bold text-[#6E6E73] dark:text-[#A1A1AA]">
+                  {item.isMastered ? t(settings.language, "mastered") : item.level === progression.recommendedLevel ? t(settings.language, "now") : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="grid grid-cols-2 gap-3">
         <button type="button" onClick={() => startPractice({ mode: "mixed", durationSec: 600 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {modeName("mixed", settings.language)}
@@ -488,9 +574,9 @@ function HomeView({
           {modeName("instrument-self-check", settings.language)}
           <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutSelfCheckSubcopy")}</span>
         </button>
-        <button type="button" onClick={() => startPractice({ weakOnly: true, durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
-          {t(settings.language, "weakNotes")}
-          <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutWeakSubcopy")}</span>
+        <button type="button" onClick={() => startPractice({ mode: "phrase-self-check", durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+          {modeName("phrase-self-check", settings.language)}
+          <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutPhraseSubcopy")}</span>
         </button>
         <button type="button" onClick={() => setView("reference")} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {t(settings.language, "reference")}
@@ -552,42 +638,46 @@ function HelpDialog({ language, onClose }: { language: AppSettings["language"]; 
   return (
     <div className="help-backdrop fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/45 p-4">
       <section className="help-dialog max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-lg bg-white p-5 text-[#1D1D1F] shadow-2xl dark:bg-[#1E1E22] dark:text-white">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <div className="min-w-0">
             <h2 className="text-2xl font-black">{t(language, "howItWorks")}</h2>
             <p className="mt-1 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(language, "firstTimeIntro")}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg border border-black/10 px-3 py-2 text-sm font-bold dark:border-white/10">
+          <button type="button" onClick={onClose} className="min-h-11 min-w-[4.75rem] shrink-0 whitespace-nowrap rounded-lg border border-black/10 px-3 py-2 text-sm font-bold dark:border-white/10">
             {t(language, "close")}
           </button>
         </div>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 grid gap-3">
           {[
-            ["helpStepStartTitle", "helpStepStartBody"],
-            ["helpStepAnswerTitle", "helpStepAnswerBody"],
-            ["helpStepFeedbackTitle", "helpStepFeedbackBody"],
-            ["helpSelfCheckTitle", "helpSelfCheckBody"],
-            ["helpPhraseTitle", "helpPhraseBody"],
-            ["helpDrillsTitle", "helpDrillsBody"]
+            ["helpPathTitle", "helpPathBody"],
+            ["helpTenMinuteTitle", "helpTenMinuteBody"],
+            ["helpReviewTitle", "helpReviewBody"]
           ].map(([titleKey, bodyKey]) => (
-            <div key={titleKey} className="rounded-lg bg-[#F5F5F7] p-4 dark:bg-[#2A2A30]">
+            <div key={titleKey} className="rounded-lg bg-[#F5F5F7] p-3 dark:bg-[#2A2A30]">
               <h3 className="font-black">{t(language, titleKey)}</h3>
-              <p className="mt-1 text-sm leading-6 text-[#3A3A3C] dark:text-[#F4F4F5]">{t(language, bodyKey)}</p>
+              <p className="mt-1 text-sm leading-5 text-[#3A3A3C] dark:text-[#F4F4F5]">{t(language, bodyKey)}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-5 rounded-lg border border-black/10 p-4 dark:border-white/10">
-          <h3 className="font-black">{t(language, "chooseByGoal")}</h3>
-          <ul className="mt-2 space-y-2 text-sm leading-6 text-[#3A3A3C] dark:text-[#F4F4F5]">
-            <li>{t(language, "goalStaff")}</li>
-            <li>{t(language, "goalName")}</li>
-            <li>{t(language, "goalMixed")}</li>
-          </ul>
+        <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+          {[
+            "helpQuickMixed",
+            "helpQuickSelfCheck",
+            "helpQuickPhrase",
+            "helpQuickReference"
+          ].map((key) => (
+            <div key={key} className="rounded-lg border border-black/10 p-3 text-[#3A3A3C] dark:border-white/10 dark:text-[#F4F4F5]">
+              {t(language, key)}
+            </div>
+          ))}
         </div>
 
-        <p className="mt-4 rounded-lg bg-[#1D1D1F] p-3 text-sm text-white dark:bg-[#2A2A30] dark:text-[#F4F4F5]">{t(language, "keyboardHelp")}</p>
+        <details className="mt-4 rounded-lg bg-[#1D1D1F] p-3 text-sm text-white dark:bg-[#2A2A30] dark:text-[#F4F4F5]">
+          <summary className="cursor-pointer font-bold">{t(language, "keyboardShortcuts")}</summary>
+          <p className="mt-2 leading-5">{t(language, "keyboardHelp")}</p>
+        </details>
       </section>
     </div>
   );

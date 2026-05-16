@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, Attempt, DifficultyLevel, NoteStats, PracticeDurationSec, PracticeMode, PracticeSession, Question, SelfCheckPromptType, Valve } from "../../types";
 import { getNotesForLevel } from "../../data/levels";
-import { formatValves, getNoteById } from "../../data/notes";
+import { formatValves, getNoteById, noteAnswerLabel } from "../../data/notes";
 import { addAttempt, putSession } from "../../storage/db";
 import { LetterAnswerGrid } from "../../components/LetterAnswerGrid";
 import { SolfegeAnswerGrid } from "../../components/SolfegeAnswerGrid";
@@ -25,6 +25,7 @@ type PracticeConfig = {
   selectedNoteIds?: string[];
   selfCheckPromptType?: SelfCheckPromptType;
   routineTitle?: string;
+  routineStepId?: string;
   routineStep?: number;
   routineTotal?: number;
 };
@@ -76,6 +77,25 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     const weakNotes = base.filter((note) => weakSet.has(note.id));
     return weakNotes.length > 0 ? weakNotes : weakNoteIds.map(getNoteById);
   }, [config.level, config.selectedNoteIds, config.weakOnly, settings.accidentalsEnabled, settings.selectedNoteIds, weakNoteIds]);
+
+  const activeNoteIds = useMemo(() => activeNotes.map((note) => note.id), [activeNotes]);
+
+  const answerOptions = useMemo(() => {
+    if (!question) return [];
+    if (question.answerKind === "letter") return Array.from(new Set(activeNotes.map(noteAnswerLabel)));
+    if (question.answerKind === "solfege") return Array.from(new Set(activeNotes.map((note) => note.solfegeFixedDo)));
+    return Array.from(new Set(activeNotes.map((note) => formatValves(note.valves))));
+  }, [activeNotes, question]);
+
+  const attemptContext = useCallback(() => ({
+    level: config.level,
+    activeNoteIds,
+    answerOptions,
+    routineStepId: config.routineStepId,
+    routineStepIndex: config.routineStep,
+    routineStepTotal: config.routineTotal,
+    hintShown: showHint
+  }), [activeNoteIds, answerOptions, config.level, config.routineStep, config.routineStepId, config.routineTotal, showHint]);
 
   const previousNoteIdRef = useRef<string | undefined>(undefined);
 
@@ -194,6 +214,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         id: makeId(),
         sessionId: sessionRef.current.id,
         questionMode: question.mode,
+        ...attemptContext(),
         noteId: question.note.id,
         shownPromptType: question.promptType,
         expectedAnswer: result.expectedAnswer,
@@ -213,7 +234,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         autoAdvanceRef.current = window.setTimeout(nextQuestion, delay);
       }
     },
-    [feedback, nextQuestion, paused, question, settings]
+    [attemptContext, feedback, nextQuestion, paused, question, settings]
   );
 
   const revealAnswer = () => {
@@ -231,6 +252,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       id: makeId(),
       sessionId: sessionRef.current.id,
       questionMode: question.mode,
+      ...attemptContext(),
       noteId: question.isPhrase ? undefined : question.note.id,
       noteIds,
       isPhrase: question.isPhrase,

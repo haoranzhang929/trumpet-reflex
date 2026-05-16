@@ -2,7 +2,15 @@ import type React from "react";
 import type { AppSettings, DifficultyLevel, PracticeMode } from "../../types";
 import { levels } from "../../data/levels";
 import { trainingModes } from "../../data/modes";
-import { notes } from "../../data/notes";
+import {
+  COMMON_ACCIDENTAL_NOTE_IDS,
+  LOW_ACCIDENTAL_NOTE_IDS,
+  LOW_NATURAL_NOTE_IDS,
+  NATURAL_NOTE_IDS,
+  UPPER_ACCIDENTAL_NOTE_IDS,
+  UPPER_NATURAL_NOTE_IDS
+} from "../../data/notes";
+import { getNoteById } from "../../data/notes";
 import { defaultSettings } from "../../storage/settingsStorage";
 import { durationName, levelName, modeName, t } from "../../i18n";
 
@@ -31,6 +39,7 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
       </section>
 
       <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <h2 className="text-lg font-bold">{t(settings.language, "practiceDefaults")}</h2>
         <Select label={t(settings.language, "defaultMode")} value={settings.defaultMode} onChange={(value) => update("defaultMode", value as PracticeMode)}>
           {trainingModes.map((mode) => <option key={mode.id} value={mode.id}>{modeName(mode.id, settings.language)}</option>)}
         </Select>
@@ -48,22 +57,17 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
           <option value="4">4</option>
           <option value="5">5</option>
         </Select>
-        <NumberField
-          label={t(settings.language, "veryFastThreshold")}
-          value={settings.veryFastThresholdMs}
-          min={500}
-          max={10000}
-          step={100}
-          onChange={(value) => update("veryFastThresholdMs", value)}
-        />
-        <NumberField
-          label={t(settings.language, "slowThreshold")}
-          value={settings.slowThresholdMs}
-          min={1000}
-          max={20000}
-          step={100}
-          onChange={(value) => update("slowThresholdMs", Math.max(value, settings.veryFastThresholdMs))}
-        />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <h2 className="text-lg font-bold">{t(settings.language, "practiceBehavior")}</h2>
+        <Toggle label={t(settings.language, "autoAdvance")} checked={settings.autoAdvanceCorrect} onChange={(value) => update("autoAdvanceCorrect", value)} />
+        <Toggle label={t(settings.language, "hintsAfterWrong")} checked={settings.hintsAfterWrong} onChange={(value) => update("hintsAfterWrong", value)} />
+        <Toggle label={t(settings.language, "weakWeighting")} checked={settings.weakNoteBias} onChange={(value) => update("weakNoteBias", value)} />
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <h2 className="text-lg font-bold">{t(settings.language, "appPreferences")}</h2>
         <Select label={t(settings.language, "displayLanguage")} value={settings.language} onChange={(value) => update("language", value as AppSettings["language"])}>
           <option value="en">{t(settings.language, "english")}</option>
           <option value="zh">{t(settings.language, "chinese")}</option>
@@ -75,25 +79,60 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         </Select>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
-        <Toggle label={t(settings.language, "autoAdvance")} checked={settings.autoAdvanceCorrect} onChange={(value) => update("autoAdvanceCorrect", value)} />
-        <Toggle label={t(settings.language, "hintsAfterWrong")} checked={settings.hintsAfterWrong} onChange={(value) => update("hintsAfterWrong", value)} />
-        <Toggle label={t(settings.language, "enableAccidentals")} checked={settings.accidentalsEnabled} onChange={(value) => update("accidentalsEnabled", value)} />
-        <Toggle label={t(settings.language, "weakWeighting")} checked={settings.weakNoteBias} onChange={(value) => update("weakNoteBias", value)} />
-        <Toggle label={t(settings.language, "concertPitch")} checked={settings.showConcertPitchReference} onChange={(value) => update("showConcertPitchReference", value)} />
-      </section>
+      <details className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <summary className="cursor-pointer text-lg font-bold">{t(settings.language, "advancedPractice")}</summary>
+        <div className="mt-3 space-y-3">
+          <Toggle label={t(settings.language, "enableAccidentals")} checked={settings.accidentalsEnabled} onChange={(value) => update("accidentalsEnabled", value)} />
+          <NumberField
+            label={t(settings.language, "veryFastThreshold")}
+            value={settings.veryFastThresholdMs}
+            min={500}
+            max={10000}
+            step={100}
+            onChange={(value) => update("veryFastThresholdMs", value)}
+          />
+          <NumberField
+            label={t(settings.language, "slowThreshold")}
+            value={settings.slowThresholdMs}
+            min={1000}
+            max={20000}
+            step={100}
+            onChange={(value) => update("slowThresholdMs", Math.max(value, settings.veryFastThresholdMs))}
+          />
+        </div>
+      </details>
 
-      <section className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
-        <h2 className="text-lg font-bold">{t(settings.language, "customNoteSet")}</h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {notes.map((note) => (
-            <label key={note.id} className="flex items-center gap-2 rounded-lg bg-[#F5F5F7] p-3 text-sm font-semibold dark:bg-[#2A2A30]">
-              <input type="checkbox" checked={settings.selectedNoteIds.includes(note.id)} onChange={() => toggleNote(note.id)} />
-              {note.displayName} / {note.solfegeFixedDo}
-            </label>
+      <details className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <summary className="cursor-pointer text-lg font-bold">{t(settings.language, "customNoteSet")}</summary>
+        <p className="mt-2 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">
+          {settings.selectedNoteIds.length} {t(settings.language, "notesLabel")}
+        </p>
+        <div className="mt-3 space-y-4">
+          {[
+            ["lowNaturalPositions", LOW_NATURAL_NOTE_IDS],
+            ["naturalStaffPositions", NATURAL_NOTE_IDS],
+            ["upperNaturalPositions", UPPER_NATURAL_NOTE_IDS],
+            ["lowAccidentals", LOW_ACCIDENTAL_NOTE_IDS],
+            ["commonAccidentals", COMMON_ACCIDENTAL_NOTE_IDS],
+            ["upperAccidentals", UPPER_ACCIDENTAL_NOTE_IDS]
+          ].map(([titleKey, noteIds]) => (
+            <div key={titleKey as string}>
+              <h3 className="text-sm font-bold text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, titleKey as string)}</h3>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {(noteIds as readonly string[]).map((noteId) => {
+                  const note = getNoteById(noteId);
+                  return (
+                    <label key={note.id} className="flex items-center gap-2 rounded-lg bg-[#F5F5F7] p-3 text-sm font-semibold dark:bg-[#2A2A30]">
+                      <input type="checkbox" checked={settings.selectedNoteIds.includes(note.id)} onChange={() => toggleNote(note.id)} />
+                      {note.displayName} / {note.solfegeFixedDo}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
-      </section>
+      </details>
 
       <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
         <h2 className="text-lg font-bold">{t(settings.language, "data")}</h2>

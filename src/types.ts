@@ -17,7 +17,10 @@ export type DifficultyLevel =
   | "cde"
   | "c-to-g"
   | "natural-c-to-c"
+  | "low-register"
   | "common-accidentals"
+  | "extended-natural"
+  | "practical-range"
   | "enharmonic-spellings"
   | "custom";
 
@@ -106,6 +109,13 @@ export type Attempt = {
   id: string;
   sessionId: string;
   questionMode: TrainingMode;
+  level?: DifficultyLevel;
+  activeNoteIds?: string[];
+  answerOptions?: string[];
+  routineStepId?: string;
+  routineStepIndex?: number;
+  routineStepTotal?: number;
+  hintShown?: boolean;
   noteId?: string;
   noteIds?: string[];
   isPhrase?: boolean;
@@ -127,10 +137,8 @@ export type AppSettings = {
   defaultMode: PracticeMode;
   defaultLevel: DifficultyLevel;
   defaultSessionLengthSec: 0 | 180 | 300 | 600;
-  answerNotation: "letter" | "solfege" | "both";
   autoAdvanceCorrect: boolean;
   hintsAfterWrong: boolean;
-  showConcertPitchReference: boolean;
   accidentalsEnabled: boolean;
   weakNoteBias: boolean;
   selectedNoteIds: string[];

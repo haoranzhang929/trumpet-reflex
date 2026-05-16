@@ -9,6 +9,7 @@ import { generatePhrase } from "./phraseGenerator";
 import { classifyAttemptSpeed } from "./speedClass";
 import { getNoteExplanation } from "./noteExplanation";
 import { createTodaySessionRoutine } from "./todaySession";
+import { buildProgressionSummary } from "./progression";
 import { buildPracticeRecommendation, getWeakestMode } from "../review/recommendation";
 import type { Attempt, NoteStats, Question } from "../../types";
 import { median } from "../../utils/stats";
@@ -28,7 +29,8 @@ function questionFor(noteId: string, answerKind: Question["answerKind"]): Questi
 
 describe("note registry", () => {
   it("contains the required natural notes and accidentals", () => {
-    expect(notes.map((note) => note.id)).toEqual(["c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5", "bb4", "as4", "fs4", "gb4", "eb4", "ds4", "ab4", "gs4", "cs4", "db4"]);
+    expect(notes.map((note) => note.id)).toEqual(expect.arrayContaining(["c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5", "bb4", "as4", "fs4", "gb4", "eb4", "ds4", "ab4", "gs4", "cs4", "db4"]));
+    expect(notes.map((note) => note.id)).toEqual(expect.arrayContaining(["fs3", "g3", "c6", "bb5"]));
     expect(getNoteById("c4").solfegeFixedDo).toBe("Do");
     expect(getNoteById("c5").staff.location).toBe("third space");
     expect(referenceStaffSpellings.map((note) => note.id)).toContain("gb4");
@@ -51,7 +53,9 @@ describe("note registry", () => {
     expect(getNotesForLevel("anchors").map((note) => note.id)).toEqual(["c4", "f4", "g4", "c5"]);
     expect(getNotesForLevel("natural-c-to-c", [], false).map((note) => note.id)).toContain("b4");
     expect(getNotesForLevel("c-to-g", [], false).map((note) => note.id)).not.toContain("bb4");
-    expect(getNotesForLevel("common-accidentals", [], false).map((note) => note.id)).toEqual(["c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5", "bb4", "fs4", "eb4"]);
+    expect(getNotesForLevel("common-accidentals", [], false).map((note) => note.id)).toEqual(["c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5", "bb4", "fs4", "eb4", "ab4", "cs4"]);
+    expect(getNotesForLevel("extended-natural", [], false).map((note) => note.id)).toContain("c6");
+    expect(getNotesForLevel("practical-range", [], false).map((note) => note.id)).toContain("fs3");
     expect(getNotesForLevel("enharmonic-spellings", [], false).map((note) => note.id)).toContain("db4");
   });
 });
@@ -204,5 +208,18 @@ describe("today session routine", () => {
     expect(routine.map((step) => step.mode)).toEqual(["staff-letter", "letter-fingering", "staff-fingering", "instrument-self-check", "staff-fingering"]);
     expect(routine.every((step) => step.durationSec === 120)).toBe(true);
     expect(routine[4].weakOnly).toBe(true);
+  });
+});
+
+describe("progression", () => {
+  it("recommends the first unmastered level", () => {
+    const attempts: Attempt[] = ["c4", "f4", "g4", "c5"].flatMap((noteId, index) => [
+      { id: `${noteId}-1`, sessionId: "s", questionMode: "staff-letter", noteId, shownPromptType: "staff", expectedAnswer: "x", userAnswer: "x", isCorrect: true, reactionMs: 1200 + index, createdAt: index },
+      { id: `${noteId}-2`, sessionId: "s", questionMode: "staff-fingering", noteId, shownPromptType: "staff", expectedAnswer: "x", userAnswer: "x", isCorrect: true, reactionMs: 1400 + index, createdAt: index + 10 },
+      { id: `${noteId}-3`, sessionId: "s", questionMode: "letter-fingering", noteId, shownPromptType: "letter", expectedAnswer: "x", userAnswer: "x", isCorrect: true, reactionMs: 1600 + index, createdAt: index + 20 }
+    ]);
+    const summary = buildProgressionSummary(attempts, deriveNoteStats(attempts));
+    expect(summary.levels[0].isMastered).toBe(true);
+    expect(summary.recommendedLevel).toBe("cde");
   });
 });
