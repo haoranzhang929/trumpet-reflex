@@ -5,7 +5,7 @@ import { formatValves, getNoteById } from "../../data/notes";
 import { getProblemPairs, getSlowButCorrectNotes, getSlowestCorrectNotes, getWeakNotes } from "../practice/sessionStats";
 import { average, median, percent } from "../../utils/stats";
 import { formatMs } from "../../utils/time";
-import { modeName, t } from "../../i18n";
+import { levelName, modeName, t } from "../../i18n";
 import { buildPracticeRecommendation } from "./recommendation";
 
 type Props = {
@@ -34,6 +34,25 @@ export function ReviewView({ attempts, sessions, noteStats, language, onPractice
       acc[attempt.questionMode] = (acc[attempt.questionMode] ?? 0) + 1;
       return acc;
     }, {});
+  const mistakesByLevel = attempts
+    .filter((attempt) => !attempt.isCorrect && attempt.level)
+    .reduce<Record<string, number>>((acc, attempt) => {
+      if (!attempt.level) return acc;
+      acc[attempt.level] = (acc[attempt.level] ?? 0) + 1;
+      return acc;
+    }, {});
+  const routineStepStats = attempts
+    .filter((attempt) => attempt.routineStepId)
+    .reduce<Record<string, { total: number; wrong: number; hintShown: number }>>((acc, attempt) => {
+      const key = attempt.routineStepId ?? "";
+      const bucket = acc[key] ?? { total: 0, wrong: 0, hintShown: 0 };
+      bucket.total += 1;
+      if (!attempt.isCorrect) bucket.wrong += 1;
+      if (attempt.hintShown) bucket.hintShown += 1;
+      acc[key] = bucket;
+      return acc;
+    }, {});
+  const hintShownCount = attempts.filter((attempt) => attempt.hintShown).length;
 
   return (
     <div className="space-y-5 py-4">
@@ -51,7 +70,6 @@ export function ReviewView({ attempts, sessions, noteStats, language, onPractice
           <div className="shift-tile rounded-lg bg-[#F5F5F7] p-3 dark:bg-[#2A2A30]"><b>{weakNotes[0] ? getNoteById(weakNotes[0].noteId).displayName : "—"}</b><span className="block text-xs text-[#6E6E73] dark:text-[#A1A1AA]">{t(language, "weakestNote")}</span></div>
           <div className="shift-tile rounded-lg bg-[#F5F5F7] p-3 dark:bg-[#2A2A30]"><b>{slowestCorrectNotes[0] ? getNoteById(slowestCorrectNotes[0].noteId).displayName : "—"}</b><span className="block text-xs text-[#6E6E73] dark:text-[#A1A1AA]">{t(language, "slowestNote")}</span></div>
         </div>
-        <button type="button" onClick={onPracticeWeak} className="mt-4 min-h-12 w-full rounded-lg bg-brass font-bold text-white">{t(language, "practiceWeak")}</button>
       </section>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -62,6 +80,7 @@ export function ReviewView({ attempts, sessions, noteStats, language, onPractice
         <StatCard label={t(language, "fastCorrect")} value={fastCorrect} />
         <StatCard label={t(language, "slowCorrect")} value={slowCorrect} />
         <StatCard label={t(language, "wrongCount")} value={wrong} />
+        <StatCard label={t(language, "hintShown")} value={hintShownCount} />
       </section>
 
       {lastSession && (
@@ -158,6 +177,51 @@ export function ReviewView({ attempts, sessions, noteStats, language, onPractice
           </div>
         )}
       </section>
+
+      <section className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <h2 className="text-lg font-bold">{t(language, "mistakesByLevel")}</h2>
+        {Object.keys(mistakesByLevel).length === 0 ? (
+          <p className="mt-2 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(language, "noMistakes")}</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {Object.entries(mistakesByLevel).map(([level, count]) => (
+              <div key={level} className="flex justify-between rounded-lg bg-[#F5F5F7] p-2 text-sm dark:bg-[#2A2A30]">
+                <span>{levelName(level as PracticeSession["level"], language)}</span>
+                <b>{count}</b>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <h2 className="text-lg font-bold">{t(language, "routineBreakdown")}</h2>
+        {Object.keys(routineStepStats).length === 0 ? (
+          <p className="mt-2 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(language, "noRoutineData")}</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {Object.entries(routineStepStats).map(([stepId, stat]) => (
+              <div key={stepId} className="grid grid-cols-[1fr_auto] gap-2 rounded-lg bg-[#F5F5F7] p-2 text-sm dark:bg-[#2A2A30]">
+                <span>{routineStepName(stepId, language)}</span>
+                <b>{percent(stat.total - stat.wrong, stat.total)}%</b>
+                <span className="text-xs text-[#6E6E73] dark:text-[#A1A1AA]">{stat.total} {t(language, "questions")} · {stat.hintShown} {t(language, "hintShown")}</span>
+                <span className="text-xs font-bold text-[#6E6E73] dark:text-[#A1A1AA]">{stat.wrong} {t(language, "wrongCount")}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
+}
+
+function routineStepName(stepId: string, language: AppSettings["language"]): string {
+  const keys: Record<string, string> = {
+    "staff-letter": "todayStepStaffLetter",
+    "letter-fingering": "todayStepLetterFingering",
+    "staff-fingering": "todayStepStaffFingering",
+    "instrument-self-check": "todayStepInstrumentSelfCheck",
+    "weak-notes-review": "todayStepWeakNotesReview"
+  };
+  return t(language, keys[stepId] ?? stepId);
 }
