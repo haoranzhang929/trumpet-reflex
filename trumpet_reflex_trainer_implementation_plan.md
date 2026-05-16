@@ -1,5 +1,53 @@
 # B♭ Trumpet Sight-Reading Trainer — Implementation Plan
 
+## 0. Current Implementation Snapshot
+
+Updated: 2026-05-16
+
+This document started as the initial build plan. It now also records the implementation history and current product shape. Completed work is marked with `[x]`; still-open work is marked with `[ ]`.
+
+### Current Product Shape
+
+Trumpet Reflex is now a local-first B♭ trumpet written-pitch reflex trainer with:
+
+- [x] Mobile-first React/Vite/PWA shell.
+- [x] Treble staff rendering through VexFlow.
+- [x] Letter-name, fixed-do, fingering, mixed, instrument self-check, and phrase self-check practice modes.
+- [x] Local IndexedDB attempt/session history.
+- [x] Weak-note weighting, slow-note tracking, problem-pair detection, and review recommendations.
+- [x] A guided learning path that recommends the next level from local attempt history.
+- [x] A 10-minute daily routine that follows the recommended learning-path level.
+- [x] Expanded written trumpet range from low register through practical upper range.
+- [x] Reference, settings, help, and review screens updated around the progression model.
+- [x] Bilingual English/Chinese UI strings with aligned key coverage.
+
+### Recent Upgrade Notes
+
+The May 2026 learning-path upgrade changed the app from a static drill tool into a guided daily practice flow.
+
+Completed in that upgrade:
+
+- [x] Added `progression.ts` to calculate the recommended level from local attempts.
+- [x] Added low register, extended natural, practical range, and expanded enharmonic note coverage.
+- [x] Updated the home screen with a compact learning-path card.
+- [x] Updated the 10-minute routine to use the current recommended level.
+- [x] Added richer attempt context: level, active note IDs, answer options, routine step, and hint usage.
+- [x] Expanded review to include mistakes by level, hint usage, and routine step breakdown.
+- [x] Reworked Reference into a compact fingering index plus collapsible staff-position groups.
+- [x] Reworked Settings into grouped defaults, behavior, app preferences, advanced settings, custom note set, and data sections.
+- [x] Shortened Help to the current workflow instead of the original long instruction sheet.
+- [x] Removed obsolete `answerNotation`, non-functional concert-pitch setting, and stale i18n strings.
+
+### Still Open
+
+- [ ] Tune progression thresholds after more real practice data.
+- [ ] Add visual progress details for each learning-path level, if the compact card proves too terse.
+- [ ] Consider a small trend view for recent 7-day practice history.
+- [ ] Consider E2E tests for the main practice loop and review flow.
+- [ ] Keep checking mobile layout after every major UI change.
+
+---
+
 ## 1. Product Goal
 
 Build a mobile-first Progressive Web App for B♭ trumpet beginners to train the mapping between:
@@ -111,7 +159,7 @@ Example:
 
 - Written C = shown as C / Do.
 - Fingering = open / 0.
-- Optional reference can show: sounding B♭.
+- Concert-pitch display is intentionally not part of the current app; the trainer focuses on what the player sees on the written part.
 
 For MVP, keep all question generation and scoring in written pitch.
 
@@ -119,7 +167,9 @@ For MVP, keep all question generation and scoring in written pitch.
 
 ## 7. Canonical Note Data Model
 
-Create a canonical note registry.
+Status: [x] Done.
+
+Create a canonical note registry. The current implementation lives in `src/data/notes.ts`.
 
 ```ts
 type Valve = 1 | 2 | 3;
@@ -169,11 +219,39 @@ type Note = {
 
 For the first implementation, support **fixed-do solfege only**. Do not implement movable-do.
 
+### Current Expanded Note Set
+
+Status: [x] Done.
+
+The first implementation supported C4 through C5 plus common accidentals. The current implementation has been expanded for the learning path:
+
+- Low natural notes: G3, A3, B3.
+- Core natural notes: C4 through C5.
+- Upper natural notes: D5 through C6.
+- Low accidentals: F#3/Gb3, G#3/Ab3, A#3/Bb3.
+- Common middle-register accidentals: Bb4, F#4, Eb4, Ab4, C#4.
+- Upper accidentals through Bb5.
+- Enharmonic spellings are represented as separate written spellings where useful.
+
+All question generation and scoring remain in **B♭ trumpet written pitch**.
+
 ---
 
 ## 8. Training Modes
 
-Implement these modes.
+Status: [x] Done, with additional self-check modes.
+
+Implemented modes:
+
+- [x] Staff → Letter Name
+- [x] Staff → Solfege
+- [x] Letter Name → Fingering
+- [x] Solfege → Fingering
+- [x] Staff → Fingering
+- [x] Fingering → Letter Name
+- [x] Mixed Mode
+- [x] Instrument Self-Check
+- [x] Phrase Self-Check
 
 ### 8.1 Staff → Letter Name
 
@@ -229,7 +307,9 @@ Mixed mode should be the default daily practice mode after onboarding.
 
 ## 9. Difficulty Levels
 
-Implement a level system.
+Status: [x] Done, later expanded into a learning path.
+
+The original MVP levels are still present, but the app now uses a broader level ladder for progression.
 
 ### Level 1: Anchor Notes
 
@@ -268,9 +348,43 @@ User can manually select which notes appear.
 
 Use checkboxes grouped by natural notes, flats, sharps, anchor notes, and weak notes.
 
+### Current Level Ladder
+
+Status: [x] Done.
+
+Current `DifficultyLevel` values:
+
+1. `anchors`: C4, F4, G4, C5.
+2. `cde`: C4, D4, E4.
+3. `c-to-g`: C4 through G4.
+4. `natural-c-to-c`: C4 through C5.
+5. `low-register`: G3, A3, B3 plus C4 through C5.
+6. `common-accidentals`: C4 through C5 plus Bb4, F#4, Eb4, Ab4, C#4.
+7. `extended-natural`: G3 through C6 natural notes.
+8. `practical-range`: practical written trumpet range from low F#3 through upper accidentals.
+9. `enharmonic-spellings`: natural range plus enharmonic spellings.
+10. `custom`: user-selected note set.
+
+### Progression System
+
+Status: [x] Done.
+
+`src/features/practice/progression.ts` computes the current recommended level from local attempts.
+
+The current rule considers:
+
+- Coverage: enough notes in the level have been attempted.
+- Volume: enough total attempts exist for the level.
+- Accuracy: target is currently 85% or higher.
+- Speed: median correct response should be reasonably fast.
+
+The home screen displays a compact learning-path card. The full path is collapsed by default to keep the first screen focused.
+
 ---
 
 ## 10. Practice Session Types
+
+Status: [x] Done.
 
 ### Quick Drill
 
@@ -291,6 +405,8 @@ Use checkboxes grouped by natural notes, flats, sharps, anchor notes, and weak n
 
 - Timer: 10 minutes.
 - Main target use case.
+- Current behavior: the home CTA starts a five-step 10-minute routine using the learning path's recommended level.
+- Steps: Staff → Letter, Letter → Fingering, Staff → Fingering, Instrument Self-Check, Weak Notes Review.
 
 ### Weak Notes Drill
 
@@ -299,6 +415,8 @@ Only uses notes where the user has low accuracy, slow median reaction time, or f
 ---
 
 ## 11. Question Generation Logic
+
+Status: [x] Done.
 
 Implement weighted random generation.
 
@@ -314,11 +432,12 @@ type QuestionGenerationOptions = {
 
 Rules:
 
-1. Select notes from active level or custom note set.
-2. If weak note bias is enabled, increase probability for weak notes.
-3. Avoid generating the exact same note twice in a row unless the note pool is tiny.
-4. For mixed mode, randomize mode first, then generate note.
-5. For fingering → note mode, only ask from active note set because trumpet fingerings repeat across registers.
+1. [x] Select notes from active level or custom note set.
+2. [x] If weak note bias is enabled, increase probability for weak notes.
+3. [x] Avoid generating the exact same note twice in a row unless the note pool is tiny.
+4. [x] For mixed mode, randomize mode first, then generate note.
+5. [x] For fingering → note mode, only ask from active note set because trumpet fingerings repeat across registers.
+6. [x] For phrase self-check, generate a short sequence and record all note IDs.
 
 Suggested weak note score:
 
@@ -339,6 +458,8 @@ weight = 1 + Math.min(weaknessScore, 10);
 ---
 
 ## 12. Answer Input UI
+
+Status: [x] Done.
 
 ### 12.1 Letter Name Input
 
@@ -388,6 +509,8 @@ Desktop keyboard shortcuts:
 
 ## 13. Feedback Behavior
 
+Status: [x] Done.
+
 ### Correct Answer
 
 - Green state.
@@ -422,6 +545,8 @@ Third line B is just below third-space C.
 
 ## 14. Hint System
 
+Status: [x] Done, simplified.
+
 Implement a lightweight hint system.
 
 ```ts
@@ -430,15 +555,15 @@ type HintSettings = {
   showLetterAfterWrong: boolean;
   showSolfegeAfterWrong: boolean;
   showFingeringAfterWrong: boolean;
-  showConcertPitchReference: boolean;
 };
 ```
 
 Default:
 
-- Show hints after wrong answer: yes.
-- Show hints before answer: no.
-- Show concert pitch reference: no.
+- [x] Show hints after wrong answer: yes.
+- [x] Show hints before answer: user can toggle with the Hint button or `H`.
+- [x] Record whether a hint was shown before an attempt for future review.
+- [x] Concert pitch reference was removed because the setting had no functional UI and the app intentionally trains written pitch.
 
 ### Landmark Hints
 
@@ -459,6 +584,8 @@ For non-anchor natural notes, show relative hints:
 ---
 
 ## 15. Staff Rendering
+
+Status: [x] Done.
 
 Use VexFlow.
 
@@ -499,66 +626,88 @@ Use a simple single-page app with internal views.
 
 ### 16.1 Home
 
+Status: [x] Done and updated for progression.
+
 Sections:
 
-- Start 10-minute mixed practice.
-- Quick drill.
-- Choose mode.
-- Current streak.
-- Last session summary.
-- Weakest notes.
+- [x] Start 10-minute recommended routine.
+- [x] Questions / accuracy / last-session summary.
+- [x] Today's focus and weak-note shortcut.
+- [x] Compact learning-path card with full path collapsed by default.
+- [x] Quick practice shortcuts.
+- [x] Drill presets.
 
 ### 16.2 Practice
 
+Status: [x] Done.
+
 Contains:
 
-- Header: mode, level, timer, progress.
-- Staff/question display.
-- Answer input.
-- Feedback.
-- Hint toggle.
-- Pause/end session.
+- [x] Header: mode, level, timer, progress.
+- [x] Staff/question display.
+- [x] Answer input.
+- [x] Feedback.
+- [x] Hint toggle.
+- [x] Pause/end session.
+- [x] Routine step indicator for the 10-minute flow.
 
 ### 16.3 Review
 
+Status: [x] Done and expanded.
+
 After session:
 
-- Total questions.
-- Accuracy.
-- Median reaction time.
-- Average reaction time.
-- Max correct streak.
-- Weak notes.
-- Mistakes by mode.
-- Button: Practice weak notes.
+- [x] Total questions.
+- [x] Accuracy.
+- [x] Median reaction time.
+- [x] Average reaction time.
+- [x] Max correct streak.
+- [x] Weak notes.
+- [x] Slow-but-correct notes.
+- [x] Slowest correct notes.
+- [x] Problem pairs.
+- [x] Mistakes by mode.
+- [x] Mistakes by level.
+- [x] 10-minute routine step breakdown.
+- [x] Hint usage count.
+- [x] Practice weak notes.
 
 ### 16.4 Settings
 
 Settings:
 
-- Display language: English / Chinese / bilingual.
-- Answer notation: Letter / Solfege / Both.
-- Solfege system: Fixed-do only for now.
-- Auto-advance after correct answer.
-- Show hints after wrong answer.
-- Default session length.
-- Default level.
-- Enable accidentals.
-- Reset local data.
+- [x] Display language: English / Chinese.
+- [x] Theme: system / light / dark.
+- [x] Solfege system: fixed-do only.
+- [x] Auto-advance after correct answer.
+- [x] Show hints after wrong answer.
+- [x] Weak-note weighting.
+- [x] Default session length.
+- [x] Default level.
+- [x] Phrase length.
+- [x] Advanced thresholds for fast/slow answer classification.
+- [x] Accidentals setting for custom note filtering.
+- [x] Custom note set, grouped and collapsed by default.
+- [x] Export, import, and reset local data.
+- [x] Removed obsolete answer-notation and concert-pitch settings.
 
 ### 16.5 Reference
 
 Static reference page:
 
-- Written note → fingering chart.
-- Staff location → letter name.
-- Letter name → solfege.
-- Explanation of B♭ trumpet written pitch.
-- Concise reference only. No long lessons.
+- [x] Compact fingering quick index.
+- [x] Staff location → letter name.
+- [x] Letter name → fixed-do solfege.
+- [x] Low, core, upper, accidental, and enharmonic sections.
+- [x] Collapsible groups to avoid a long wall of reference content.
+- [x] Explanation of B♭ trumpet written pitch.
+- [x] Concise reference only. No long lessons.
 
 ---
 
 ## 17. Data Persistence
+
+Status: [x] Done.
 
 Use localStorage for lightweight settings.
 
@@ -568,16 +717,19 @@ Use IndexedDB for sessions and attempts.
 
 ```ts
 type AppSettings = {
-  language: "en" | "zh" | "bilingual";
-  defaultMode: TrainingMode;
+  language: "en" | "zh";
+  theme: "system" | "light" | "dark";
+  defaultMode: TrainingMode | "mixed";
   defaultLevel: DifficultyLevel;
   defaultSessionLengthSec: 0 | 180 | 300 | 600;
-  answerNotation: "letter" | "solfege" | "both";
   autoAdvanceCorrect: boolean;
   hintsAfterWrong: boolean;
-  showConcertPitchReference: boolean;
   accidentalsEnabled: boolean;
   weakNoteBias: boolean;
+  selectedNoteIds: string[];
+  phraseLength: 3 | 4 | 5;
+  veryFastThresholdMs: number;
+  slowThresholdMs: number;
 };
 ```
 
@@ -605,12 +757,25 @@ type Attempt = {
   id: string;
   sessionId: string;
   questionMode: TrainingMode;
-  noteId: string;
+  level?: DifficultyLevel;
+  activeNoteIds?: string[];
+  answerOptions?: string[];
+  routineStepId?: string;
+  routineStepIndex?: number;
+  routineStepTotal?: number;
+  hintShown?: boolean;
+  noteId?: string;
+  noteIds?: string[];
+  isPhrase?: boolean;
   shownPromptType: "staff" | "letter" | "solfege" | "fingering";
   expectedAnswer: string;
   userAnswer: string;
   isCorrect: boolean;
   reactionMs: number;
+  speedClass?: "fast-correct" | "normal-correct" | "slow-correct" | "wrong";
+  inputMethod?: "tap" | "keyboard" | "self-check";
+  selfChecked?: boolean;
+  revealedBeforeAnswer?: boolean;
   createdAt: number;
 };
 ```
@@ -627,8 +792,13 @@ type NoteStats = {
   accuracy: number;
   medianReactionMs: number;
   wrongCount: number;
+  slowCorrectCount: number;
+  fastCorrectCount: number;
+  slowCount: number;
   recentWrongCount: number;
+  recentSlowCorrectCount: number;
   currentCorrectStreak: number;
+  recentFastCorrectStreak: number;
   weaknessScore: number;
 };
 ```
@@ -637,16 +807,18 @@ type NoteStats = {
 
 ## 18. Local-First Data Rules
 
-- App must work offline after first load.
-- App must not require network during practice.
-- User data remains local.
-- Provide “Export JSON” in settings.
-- Provide “Import JSON” in settings.
-- Provide “Reset all data” with confirmation.
+- [x] App must work offline after first load.
+- [x] App must not require network during practice.
+- [x] User data remains local.
+- [x] Provide “Export JSON” in settings.
+- [x] Provide “Import JSON” in settings.
+- [x] Provide “Reset all data” with confirmation.
 
 ---
 
 ## 19. PWA Requirements
+
+Status: [x] Done.
 
 Use `vite-plugin-pwa`.
 
@@ -696,6 +868,8 @@ Service worker:
 
 ## 20. Styling Direction
 
+Status: [x] Done, with ongoing polish.
+
 Use a clean, calm, practice-tool style.
 
 Avoid gamified childish UI.
@@ -726,6 +900,8 @@ Support light and dark mode.
 
 ## 21. Suggested Component Structure
 
+Status: [x] Mostly done. Current structure differs slightly from the original suggestion but follows the same feature boundaries.
+
 ```text
 src/
   app/
@@ -744,10 +920,12 @@ src/
   features/
     practice/
       PracticeView.tsx
-      practiceMachine.ts
       questionGenerator.ts
       answerChecker.ts
       sessionStats.ts
+      progression.ts
+      phraseGenerator.ts
+      todaySession.ts
     reference/
       ReferenceView.tsx
     settings/
@@ -775,6 +953,8 @@ src/
 ---
 
 ## 22. Practice State Machine
+
+Status: [x] Done with React state/hooks rather than a separate machine file.
 
 Practice flow should be explicit.
 
@@ -804,6 +984,8 @@ Question lifecycle:
 
 ## 23. Answer Checking
 
+Status: [x] Done.
+
 Use normalized answer comparison.
 
 Examples:
@@ -826,33 +1008,40 @@ checkAnswer(question: Question, userAnswer: UserAnswer): AnswerResult;
 
 ## 24. Testing Requirements
 
+Status: [x] Unit tests done. [ ] E2E tests still open.
+
 Use Vitest for pure logic.
 
 Test:
 
-- Note registry correctness.
-- Fingering mapping correctness.
-- Level note selection.
-- Random question generation avoids immediate repeat.
-- Weak note weighting.
-- Answer normalization.
-- Staff-to-letter checking.
-- Staff-to-solfege checking.
-- Staff-to-fingering checking.
-- Session stats calculation.
-- Median reaction time calculation.
+- [x] Note registry correctness.
+- [x] Fingering mapping correctness.
+- [x] Level note selection.
+- [x] Random question generation avoids immediate repeat.
+- [x] Weak note weighting.
+- [x] Answer normalization.
+- [x] Staff-to-letter checking.
+- [x] Staff-to-solfege checking.
+- [x] Staff-to-fingering checking.
+- [x] Session stats calculation.
+- [x] Median reaction time calculation.
+- [x] Phrase generation.
+- [x] Recommendation logic.
+- [x] Learning-path progression.
 
 Use Playwright if practical for E2E.
 
 E2E smoke tests:
 
-1. App loads.
-2. Start practice.
-3. Answer a staff → fingering question.
-4. Feedback appears.
-5. Attempt is saved.
-6. Review page shows stats.
-7. Refresh page preserves settings.
+1. [ ] App loads.
+2. [ ] Start practice.
+3. [ ] Answer a staff → fingering question.
+4. [ ] Feedback appears.
+5. [ ] Attempt is saved.
+6. [ ] Review page shows stats.
+7. [ ] Refresh page preserves settings.
+
+Manual browser smoke checks have been used during development for Home, Help, Ref, Review, and Settings.
 
 ---
 
@@ -860,46 +1049,52 @@ E2E smoke tests:
 
 ### Functional
 
-- User can start a practice session.
-- User can train staff → letter.
-- User can train staff → solfege.
-- User can train letter → fingering.
-- User can train solfege → fingering.
-- User can train staff → fingering.
-- User can use mixed mode.
-- User can change difficulty level.
-- User can answer using touch.
-- User can answer using keyboard.
-- User can review session stats.
-- User can see weak notes.
-- User can practice weak notes.
-- User can view reference chart.
-- User can reset local data.
+- [x] User can start a practice session.
+- [x] User can train staff → letter.
+- [x] User can train staff → solfege.
+- [x] User can train letter → fingering.
+- [x] User can train solfege → fingering.
+- [x] User can train staff → fingering.
+- [x] User can use mixed mode.
+- [x] User can use instrument self-check.
+- [x] User can use phrase self-check.
+- [x] User can change difficulty level.
+- [x] User can follow a recommended learning path.
+- [x] User can answer using touch.
+- [x] User can answer using keyboard.
+- [x] User can review session stats.
+- [x] User can see weak notes.
+- [x] User can practice weak notes.
+- [x] User can view reference chart.
+- [x] User can reset local data.
 
 ### Technical
 
-- TypeScript builds without errors.
-- No backend required.
-- No microphone permission requested.
-- App deploys to Vercel.
-- App works on mobile Safari.
-- App works after refresh.
-- App supports PWA install.
-- App has basic offline support.
-- Core logic has unit tests.
+- [x] TypeScript builds without errors.
+- [x] No backend required.
+- [x] No microphone permission requested.
+- [x] App deploys to Vercel.
+- [ ] App works on mobile Safari. Needs continued real-device checking.
+- [x] App works after refresh.
+- [x] App supports PWA install.
+- [x] App has basic offline support.
+- [x] Core logic has unit tests.
 
 ### UX
 
-- Main practice loop is usable with one hand.
-- Buttons are large enough on phone.
-- Staff notation is readable.
-- Feedback is immediate and clear.
-- Wrong answer explains the correct mapping.
-- User can complete a 10-minute session without friction.
+- [x] Main practice loop is usable with one hand.
+- [x] Buttons are large enough on phone.
+- [x] Staff notation is readable.
+- [x] Feedback is immediate and clear.
+- [x] Wrong answer explains the correct mapping.
+- [x] User can complete a 10-minute session without friction.
+- [x] Home, Help, Ref, Settings, and Review were simplified after real use.
 
 ---
 
 ## 26. Vercel Deployment
+
+Status: [x] Done.
 
 Add scripts:
 
@@ -930,24 +1125,27 @@ No serverless functions needed.
 
 Implement in this order:
 
-1. Project setup.
-2. Note registry and fingering data.
-3. Question generator.
-4. Answer checker.
-5. VexFlow staff rendering.
-6. Practice view.
-7. Valve pad input.
-8. Letter and solfege answer grids.
-9. Session timer.
-10. Attempt recording.
-11. Review stats.
-12. Weak notes drill.
-13. Settings.
-14. Reference page.
-15. PWA support.
-16. Vercel deployment config.
-17. Unit tests.
-18. Mobile polish.
+- [x] Project setup.
+- [x] Note registry and fingering data.
+- [x] Question generator.
+- [x] Answer checker.
+- [x] VexFlow staff rendering.
+- [x] Practice view.
+- [x] Valve pad input.
+- [x] Letter and solfege answer grids.
+- [x] Session timer.
+- [x] Attempt recording.
+- [x] Review stats.
+- [x] Weak notes drill.
+- [x] Settings.
+- [x] Reference page.
+- [x] PWA support.
+- [x] Vercel deployment config.
+- [x] Unit tests.
+- [x] Mobile polish pass.
+- [x] Learning path progression upgrade.
+- [x] Expanded practical note range.
+- [x] Reference/settings/help cleanup.
 
 ---
 
@@ -973,11 +1171,65 @@ This app should remain a fast, local-first, personal trumpet reflex trainer.
 
 A deployed Vercel PWA where the user can open the app on phone and practice for 10 minutes:
 
-- Reading staff notes.
-- Identifying letter names.
-- Identifying fixed-do solfege.
-- Mapping notes to B♭ trumpet valves.
-- Reviewing weak notes.
-- Gradually expanding from anchor notes to natural notes and common accidentals.
+- [x] Reading staff notes.
+- [x] Identifying letter names.
+- [x] Identifying fixed-do solfege.
+- [x] Mapping notes to B♭ trumpet valves.
+- [x] Reviewing weak notes.
+- [x] Gradually expanding from anchor notes to natural notes and common accidentals.
+- [x] Continuing beyond the original MVP into low register, extended natural notes, and practical range stages.
 
 The main success criterion is not feature quantity. The main success criterion is that the app makes daily 10-minute trumpet reading practice frictionless.
+
+---
+
+## 30. Implementation Log
+
+### Initial MVP
+
+Completed:
+
+- [x] Vite/React/TypeScript/Tailwind project setup.
+- [x] PWA manifest and service worker.
+- [x] Local settings persistence.
+- [x] IndexedDB sessions and attempts.
+- [x] Core note registry for C4 through C5.
+- [x] Common accidentals and enharmonic spellings.
+- [x] Practice modes and answer checking.
+- [x] VexFlow staff rendering.
+- [x] Review stats and weak-note weighting.
+- [x] Settings, Reference, and Review pages.
+
+### Practice Experience Expansion
+
+Completed:
+
+- [x] Instrument Self-Check mode.
+- [x] Phrase Self-Check mode.
+- [x] Today's 10-minute five-step routine.
+- [x] Speed classes for fast, normal, slow, and wrong answers.
+- [x] Richer review recommendations.
+
+### Learning Path Upgrade
+
+Completed:
+
+- [x] Expanded note registry to practical written trumpet range.
+- [x] Added low register, extended natural, practical range, and enhanced enharmonic levels.
+- [x] Added progression summary and recommended-level calculation.
+- [x] Home screen learning-path card.
+- [x] 10-minute routine now follows the recommended level.
+- [x] Attempt records now include richer context for future review.
+- [x] Review now reports mistakes by level and 10-minute routine step stats.
+- [x] Reference page changed from a long chart into a compact fingering index plus collapsible staff sections.
+- [x] Settings page reorganized and long custom note set collapsed.
+- [x] Help dialog rewritten around the current workflow.
+- [x] Removed obsolete settings and stale i18n keys.
+
+### Current Next Questions
+
+- [ ] Are the progression thresholds too strict or too loose after more daily use?
+- [ ] Should Review prioritize the most recent 7 days over lifetime attempts?
+- [ ] Should the learning-path card show a clearer "why this level" explanation?
+- [ ] Should custom note sets become named saved presets?
+- [ ] Should we add a small E2E smoke suite for the main happy path?
