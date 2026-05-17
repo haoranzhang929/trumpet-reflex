@@ -13,6 +13,7 @@ import {
 import { getNoteById } from "../../data/notes";
 import { defaultSettings } from "../../storage/settingsStorage";
 import { durationName, levelName, modeName, t } from "../../i18n";
+import { canUseHapticFeedback } from "../../utils/haptics";
 
 type Props = {
   settings: AppSettings;
@@ -24,6 +25,7 @@ type Props = {
 
 export function SettingsView({ settings, onChange, onExport, onImport, onReset }: Props) {
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => onChange({ ...settings, [key]: value });
+  const hapticFeedbackSupported = canUseHapticFeedback();
   const toggleNote = (noteId: string) => {
     const selected = settings.selectedNoteIds.includes(noteId)
       ? settings.selectedNoteIds.filter((id) => id !== noteId)
@@ -63,7 +65,13 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         <h2 className="text-lg font-bold">{t(settings.language, "practiceBehavior")}</h2>
         <Toggle label={t(settings.language, "autoAdvance")} checked={settings.autoAdvanceCorrect} onChange={(value) => update("autoAdvanceCorrect", value)} />
         <Toggle label={t(settings.language, "hintsAfterWrong")} checked={settings.hintsAfterWrong} onChange={(value) => update("hintsAfterWrong", value)} />
-        <Toggle label={t(settings.language, "hapticFeedback")} checked={settings.hapticFeedback} onChange={(value) => update("hapticFeedback", value)} />
+        <Toggle
+          label={t(settings.language, "hapticFeedback")}
+          checked={hapticFeedbackSupported && settings.hapticFeedback}
+          disabled={!hapticFeedbackSupported}
+          description={hapticFeedbackSupported ? undefined : t(settings.language, "hapticFeedbackUnsupported")}
+          onChange={(value) => update("hapticFeedback", value)}
+        />
         <Toggle label={t(settings.language, "weakWeighting")} checked={settings.weakNoteBias} onChange={(value) => update("weakNoteBias", value)} />
       </section>
 
@@ -199,11 +207,32 @@ function NumberField({
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function Toggle({
+  label,
+  checked,
+  disabled = false,
+  description,
+  onChange
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  description?: string;
+  onChange: (value: boolean) => void;
+}) {
   return (
-    <label className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-[#F5F5F7] px-3 text-sm font-semibold dark:bg-[#2A2A30]">
-      {label}
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5" />
+    <label className="flex min-h-12 items-center justify-between gap-3 rounded-lg bg-[#F5F5F7] px-3 py-2 text-sm font-semibold dark:bg-[#2A2A30]">
+      <span>
+        <span className={disabled ? "text-[#86868B] dark:text-[#A1A1AA]" : ""}>{label}</span>
+        {description ? <span className="mt-1 block text-xs font-normal leading-5 text-[#6E6E73] dark:text-[#A1A1AA]">{description}</span> : null}
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-5 w-5 shrink-0 disabled:opacity-40"
+      />
     </label>
   );
 }

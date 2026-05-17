@@ -16,6 +16,7 @@ import { levelName, modeName, staffHint, t } from "../../i18n";
 import { generatePhrase } from "./phraseGenerator";
 import { classifyAttemptSpeed } from "./speedClass";
 import { getNoteExplanation } from "./noteExplanation";
+import { vibrateAnswerFeedback } from "../../utils/haptics";
 
 type PracticeConfig = {
   mode: PracticeMode;
@@ -46,12 +47,6 @@ type FeedbackState = {
 } | null;
 
 const makeId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
-
-function vibrateAnswer(isCorrect: boolean, enabled: boolean) {
-  const vibrate = "vibrate" in navigator ? navigator.vibrate : undefined;
-  if (!enabled || typeof vibrate !== "function") return;
-  vibrate.call(navigator, isCorrect ? [55] : [28, 45, 28]);
-}
 
 export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinished, onExit }: Props) {
   const sessionRef = useRef<Pick<PracticeSession, "id" | "startedAt" | "mode" | "level">>({
@@ -252,7 +247,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       const nextAttempts = [...attemptsRef.current, attempt];
       attemptsRef.current = nextAttempts;
       setAttempts(nextAttempts);
-      vibrateAnswer(result.isCorrect, settings.hapticFeedback);
+      vibrateAnswerFeedback(result.isCorrect, settings.hapticFeedback);
       setCurrentStreak((value) => (result.isCorrect ? value + 1 : 0));
       setFeedback({ result: result.isCorrect ? "correct" : "wrong", userAnswer: result.userAnswer, expectedAnswer: result.expectedAnswer });
       const delay = result.isCorrect ? 650 : 1400;
@@ -299,7 +294,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     const nextAttempts = [...attemptsRef.current, attempt];
     attemptsRef.current = nextAttempts;
     setAttempts(nextAttempts);
-    vibrateAnswer(isCorrect, settings.hapticFeedback);
+    vibrateAnswerFeedback(isCorrect, settings.hapticFeedback);
     setCurrentStreak((value) => (isCorrect ? value + 1 : 0));
     setFeedback({ result: isCorrect ? "correct" : "wrong", userAnswer: attempt.userAnswer, expectedAnswer: attempt.expectedAnswer });
     if (timerExpired) {
