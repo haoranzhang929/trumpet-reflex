@@ -17,7 +17,14 @@ export function FeedbackPanel({ result, note, userAnswer, expectedAnswer, showHi
   if (!result) {
     return (
       <div className="feedback-ready min-h-28 rounded-lg border border-dashed border-black/15 bg-white p-4 text-sm text-[#6E6E73] shadow-sm dark:border-white/15 dark:bg-[#1E1E22] dark:text-[#A1A1AA]">
-        {t(language, readyMessageKey)}
+        {readyMessageKey === "answerReady" ? (
+          <>
+            <span className="sm:hidden">{t(language, "answerReadyMobile")}</span>
+            <span className="hidden sm:inline">{t(language, readyMessageKey)}</span>
+          </>
+        ) : (
+          t(language, readyMessageKey)
+        )}
       </div>
     );
   }

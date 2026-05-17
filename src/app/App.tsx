@@ -86,7 +86,7 @@ export default function App() {
 
   const noteStats = useMemo(() => deriveNoteStats(attempts), [attempts]);
   const weakNotes = useMemo(() => getWeakNotes(noteStats), [noteStats]);
-  const progression = useMemo(() => buildProgressionSummary(attempts, noteStats), [attempts, noteStats]);
+  const progression = useMemo(() => buildProgressionSummary(attempts), [attempts]);
   const lastSession = [...sessions].reverse().find((session) => session.totalQuestions > 0);
   const totalCorrect = attempts.filter((attempt) => attempt.isCorrect).length;
 
@@ -238,7 +238,7 @@ export default function App() {
               openHelp={() => setShowHelp(true)}
             />
           )}
-          {view === "practiceMenu" && <PracticeMenuView settings={settings} startPractice={startPractice} />}
+          {view === "practiceMenu" && <PracticeMenuView settings={settings} progression={progression} startPractice={startPractice} />}
           {view === "practice" && (
             <PracticeView
               config={practiceConfig}
@@ -307,7 +307,7 @@ function navButtonClass(item: View, view: View): string {
       "relative min-w-0 truncate rounded-lg px-1 py-2 text-base font-bold capitalize",
       isActive
         ? "bg-[#007AFF]/10 text-brass dark:bg-[#60A5FA]/18 dark:text-[#93C5FD]"
-        : "nav-practice-tab text-brass dark:text-[#93C5FD]"
+        : "nav-practice-tab text-[#0057D9] dark:text-white"
     ].join(" ");
   }
   return `min-w-0 truncate rounded-lg px-1 py-2 capitalize ${
@@ -319,15 +319,18 @@ function navButtonClass(item: View, view: View): string {
 
 function PracticeMenuView({
   settings,
+  progression,
   startPractice
 }: {
   settings: AppSettings;
+  progression: ProgressionSummary;
   startPractice: (config?: PracticeStartConfig) => void;
 }) {
   const [mode, setMode] = useState<PracticeMode>(settings.defaultMode);
   const [level, setLevel] = useState<DifficultyLevel>(settings.defaultLevel);
   const [durationSec, setDurationSec] = useState<0 | 180 | 300 | 600>(settings.defaultSessionLengthSec);
   const [selfCheckPromptType, setSelfCheckPromptType] = useState<SelfCheckPromptType>("staff");
+  const recommendedProgress = progression.levels.find((item) => item.level === progression.recommendedLevel);
 
   return (
     <div className="space-y-5 py-4">
@@ -336,7 +339,41 @@ function PracticeMenuView({
         <p className="mt-1 text-sm leading-6 text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "practiceMenuIntro")}</p>
       </section>
 
+      <section className="ivory-texture rounded-lg border border-black/10 bg-white p-4 text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs font-bold uppercase text-brass">{t(settings.language, "learningPath")}</div>
+            <h2 className="mt-1 text-xl font-black">{levelName(progression.recommendedLevel, settings.language)}</h2>
+            <p className="mt-1 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "startPathIntro")}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => startPractice({ mode: "mixed", level: progression.recommendedLevel, durationSec: 600 })}
+            className="min-h-11 shrink-0 rounded-lg bg-brass px-3 text-sm font-bold text-white"
+          >
+            {t(settings.language, "trainThisLevel")}
+          </button>
+        </div>
+        {recommendedProgress ? (
+          <div className="mt-3">
+            <div className="h-2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div
+                className="h-full rounded-full bg-brass"
+                style={{ width: `${Math.min(100, Math.round((recommendedProgress.attemptedNotes / recommendedProgress.totalNotes) * 100))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#6E6E73] dark:text-[#A1A1AA]">
+              {recommendedProgress.attemptedNotes}/{recommendedProgress.totalNotes} {t(settings.language, "notesLabel")} · {recommendedProgress.totalAttempts} {t(settings.language, "questions")} · {recommendedProgress.accuracy}%
+            </p>
+          </div>
+        ) : null}
+      </section>
+
       <section className="space-y-3 rounded-lg border border-black/10 bg-white p-4 dark:border-white/10 dark:bg-[#1E1E22]">
+        <div>
+          <h2 className="text-lg font-black">{t(settings.language, "freePracticeSetup")}</h2>
+          <p className="mt-1 text-sm text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "freePracticeSetupIntro")}</p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold">
             {t(settings.language, "mode")}
@@ -387,9 +424,9 @@ function PracticeMenuView({
           {t(settings.language, "unlimitedPractice")}
           <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{modeName(mode, settings.language)}</span>
         </button>
-        <button type="button" onClick={() => startPractice({ mode: "mixed", level: settings.defaultLevel, durationSec: 600 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+        <button type="button" onClick={() => startPractice({ mode: "mixed", level: progression.recommendedLevel, durationSec: 600 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {t(settings.language, "timedPractice")}
-          <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{modeName("mixed", settings.language)} · {durationName(600, settings.language)}</span>
+          <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{levelName(progression.recommendedLevel, settings.language)} · {durationName(600, settings.language)}</span>
         </button>
       </section>
 
@@ -448,7 +485,7 @@ function HomeView({
           <p className="mt-2 text-base font-semibold text-[#1D1D1F] dark:text-white">{t(settings.language, "homeValueProp")}</p>
           <p className="mt-1 text-sm leading-6 text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "homeReflexChain")}</p>
         </div>
-        <button type="button" onClick={startTodaySession} className="brass-animate-button min-h-16 w-full overflow-hidden rounded-lg px-4 py-3 text-left text-lg font-black leading-tight text-white shadow-lg shadow-[#007AFF]/20">
+        <button type="button" onClick={startTodaySession} className="brass-primary-button min-h-16 w-full overflow-hidden rounded-lg px-4 py-3 text-left text-lg font-black leading-tight text-white shadow-lg shadow-[#007AFF]/20">
           <span className="block max-w-full text-wrap break-words">{t(settings.language, "startTodaySession")}</span>
           <span className="mt-1 block max-w-full text-wrap break-words text-sm font-medium leading-snug text-white/82">
             {t(settings.language, "todaySessionSubcopy")} · {levelName(progression.recommendedLevel, settings.language)}
@@ -481,7 +518,7 @@ function HomeView({
                 : t(settings.language, "todayFocusEmpty")}
             </p>
           </div>
-          <button type="button" onClick={() => startPractice({ weakOnly: true, durationSec: 300 })} className="min-h-11 rounded-lg bg-[#1D1D1F] px-3 text-sm font-bold text-white dark:bg-white dark:text-[#1D1D1F]">
+          <button type="button" onClick={() => startPractice({ level: progression.recommendedLevel, weakOnly: true, durationSec: 300 })} className="min-h-11 rounded-lg bg-[#1D1D1F] px-3 text-sm font-bold text-white dark:bg-white dark:text-[#1D1D1F]">
             {t(settings.language, "weakNotes")}
           </button>
         </div>
@@ -536,45 +573,51 @@ function HomeView({
         </button>
         {pathExpanded && (
           <div className="mt-3 grid gap-2">
-            {progression.levels.map((item, index) => (
-              <button
-                key={item.level}
-                type="button"
-                onClick={() => startPractice({ mode: "mixed", level: item.level, durationSec: 300 })}
-                className={`grid grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-lg p-3 text-left ${
-                  item.level === progression.recommendedLevel
-                    ? "bg-[#EAF3FF] text-[#1D1D1F] ring-1 ring-[#007AFF]/25 dark:bg-[#17304D] dark:text-white"
-                    : "bg-[#F5F5F7] text-[#1D1D1F] dark:bg-[#2A2A30] dark:text-white"
-                }`}
-              >
-                <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-black ${item.isMastered ? "bg-[#34C759] text-white" : "bg-white text-[#6E6E73] dark:bg-[#1E1E22] dark:text-[#A1A1AA]"}`}>
-                  {item.isMastered ? "✓" : index + 1}
-                </span>
-                <span>
-                  <span className="block font-bold">{levelName(item.level, settings.language)}</span>
-                  <span className="block text-xs text-[#6E6E73] dark:text-[#A1A1AA]">
-                    {item.attemptedNotes}/{item.totalNotes} {t(settings.language, "notesLabel")} · {item.totalAttempts} {t(settings.language, "questions")} · {item.accuracy}%
+            {progression.levels.map((item, index) => {
+              const isRecommended = item.level === progression.recommendedLevel;
+              const isFreePractice = !item.isUnlocked && !isRecommended && !item.isMastered;
+              return (
+                <button
+                  key={item.level}
+                  type="button"
+                  onClick={() => startPractice({ mode: "mixed", level: item.level, durationSec: 300 })}
+                  className={`grid grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-lg p-3 text-left ${
+                    isRecommended
+                      ? "bg-[#EAF3FF] text-[#1D1D1F] ring-1 ring-[#007AFF]/25 dark:bg-[#17304D] dark:text-white"
+                      : isFreePractice
+                        ? "border border-dashed border-black/15 bg-white text-[#1D1D1F] dark:border-white/15 dark:bg-[#1E1E22] dark:text-white"
+                        : "bg-[#F5F5F7] text-[#1D1D1F] dark:bg-[#2A2A30] dark:text-white"
+                  }`}
+                >
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-black ${item.isMastered ? "bg-[#34C759] text-white" : isFreePractice ? "bg-[#F5F5F7] text-[#86868B] dark:bg-[#2A2A30] dark:text-[#A1A1AA]" : "bg-white text-[#6E6E73] dark:bg-[#1E1E22] dark:text-[#A1A1AA]"}`}>
+                    {item.isMastered ? "✓" : index + 1}
                   </span>
-                </span>
-                <span className="text-xs font-bold text-[#6E6E73] dark:text-[#A1A1AA]">
-                  {item.isMastered ? t(settings.language, "mastered") : item.level === progression.recommendedLevel ? t(settings.language, "now") : ""}
-                </span>
-              </button>
-            ))}
+                  <span>
+                    <span className="block font-bold">{levelName(item.level, settings.language)}</span>
+                    <span className="block text-xs text-[#6E6E73] dark:text-[#A1A1AA]">
+                      {item.attemptedNotes}/{item.totalNotes} {t(settings.language, "notesLabel")} · {item.totalAttempts} {t(settings.language, "questions")} · {item.accuracy}%
+                    </span>
+                  </span>
+                  <span className="text-xs font-bold text-[#6E6E73] dark:text-[#A1A1AA]">
+                    {item.isMastered ? t(settings.language, "mastered") : isRecommended ? t(settings.language, "now") : isFreePractice ? t(settings.language, "freePractice") : ""}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </section>
 
       <section className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => startPractice({ mode: "mixed", durationSec: 600 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+        <button type="button" onClick={() => startPractice({ mode: "mixed", level: progression.recommendedLevel, durationSec: 600 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {modeName("mixed", settings.language)}
           <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutMixedSubcopy")}</span>
         </button>
-        <button type="button" onClick={() => startPractice({ mode: "instrument-self-check", durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+        <button type="button" onClick={() => startPractice({ mode: "instrument-self-check", level: progression.recommendedLevel, durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {modeName("instrument-self-check", settings.language)}
           <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutSelfCheckSubcopy")}</span>
         </button>
-        <button type="button" onClick={() => startPractice({ mode: "phrase-self-check", durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+        <button type="button" onClick={() => startPractice({ mode: "phrase-self-check", level: progression.recommendedLevel, durationSec: 300 })} className="shift-tile min-h-16 rounded-lg border border-black/10 bg-white p-3 text-left font-bold text-[#1D1D1F] dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
           {modeName("phrase-self-check", settings.language)}
           <span className="mt-1 block text-sm font-normal text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "shortcutPhraseSubcopy")}</span>
         </button>
@@ -651,6 +694,7 @@ function HelpDialog({ language, onClose }: { language: AppSettings["language"]; 
         <div className="mt-5 grid gap-3">
           {[
             ["helpPathTitle", "helpPathBody"],
+            ["helpStartTitle", "helpStartBody"],
             ["helpTenMinuteTitle", "helpTenMinuteBody"],
             ["helpReviewTitle", "helpReviewBody"]
           ].map(([titleKey, bodyKey]) => (

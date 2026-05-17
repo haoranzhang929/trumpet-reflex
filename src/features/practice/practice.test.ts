@@ -218,8 +218,84 @@ describe("progression", () => {
       { id: `${noteId}-2`, sessionId: "s", questionMode: "staff-fingering", noteId, shownPromptType: "staff", expectedAnswer: "x", userAnswer: "x", isCorrect: true, reactionMs: 1400 + index, createdAt: index + 10 },
       { id: `${noteId}-3`, sessionId: "s", questionMode: "letter-fingering", noteId, shownPromptType: "letter", expectedAnswer: "x", userAnswer: "x", isCorrect: true, reactionMs: 1600 + index, createdAt: index + 20 }
     ]);
-    const summary = buildProgressionSummary(attempts, deriveNoteStats(attempts));
+    const summary = buildProgressionSummary(attempts);
     expect(summary.levels[0].isMastered).toBe(true);
     expect(summary.recommendedLevel).toBe("cde");
+  });
+
+  it("does not mark later levels complete from earlier level attempts", () => {
+    const anchors: Attempt[] = ["c4", "f4", "g4", "c5"].flatMap((noteId, index) => [1, 2, 3].map((round) => ({
+      id: `anchor-${noteId}-${round}`,
+      sessionId: "s1",
+      questionMode: "staff-letter" as const,
+      level: "anchors" as const,
+      noteId,
+      shownPromptType: "staff" as const,
+      expectedAnswer: "x",
+      userAnswer: "x",
+      isCorrect: true,
+      reactionMs: 1200 + index,
+      createdAt: index + round
+    })));
+    const cde: Attempt[] = ["c4", "d4", "e4"].flatMap((noteId, index) => [1, 2, 3, 4].map((round) => ({
+      id: `cde-${noteId}-${round}`,
+      sessionId: "s2",
+      questionMode: "staff-fingering" as const,
+      level: "cde" as const,
+      noteId,
+      shownPromptType: "staff" as const,
+      expectedAnswer: "x",
+      userAnswer: "x",
+      isCorrect: true,
+      reactionMs: 1300 + index,
+      createdAt: 20 + index + round
+    })));
+    const attempts = [...anchors, ...cde];
+    const summary = buildProgressionSummary(attempts);
+    expect(summary.levels.find((item) => item.level === "anchors")?.isMastered).toBe(true);
+    expect(summary.levels.find((item) => item.level === "cde")?.isMastered).toBe(true);
+    expect(summary.levels.find((item) => item.level === "c-to-g")?.isMastered).toBe(false);
+    expect(summary.levels.find((item) => item.level === "c-to-g")?.totalAttempts).toBe(0);
+    expect(summary.recommendedLevel).toBe("c-to-g");
+  });
+
+  it("keeps skipped mastered levels from moving the recommendation past earlier gaps", () => {
+    const attempts: Attempt[] = ["c4", "d4", "e4", "f4", "g4"].flatMap((noteId, index) => [1, 2, 3].map((round) => ({
+      id: `ctog-${noteId}-${round}`,
+      sessionId: "s",
+      questionMode: "staff-fingering" as const,
+      level: "c-to-g" as const,
+      noteId,
+      shownPromptType: "staff" as const,
+      expectedAnswer: "x",
+      userAnswer: "x",
+      isCorrect: true,
+      reactionMs: 1200 + index,
+      createdAt: index + round
+    })));
+    const summary = buildProgressionSummary(attempts);
+    expect(summary.levels.find((item) => item.level === "c-to-g")?.isMastered).toBe(true);
+    expect(summary.levels.find((item) => item.level === "anchors")?.isMastered).toBe(false);
+    expect(summary.recommendedLevel).toBe("anchors");
+  });
+
+  it("ignores custom preset attempts for learning-path completion", () => {
+    const attempts: Attempt[] = ["c4", "f4", "g4", "c5"].flatMap((noteId, index) => [1, 2, 3].map((round) => ({
+      id: `custom-${noteId}-${round}`,
+      sessionId: "s",
+      questionMode: "staff-fingering" as const,
+      level: "custom" as const,
+      noteId,
+      shownPromptType: "staff" as const,
+      expectedAnswer: "x",
+      userAnswer: "x",
+      isCorrect: true,
+      reactionMs: 1200 + index,
+      createdAt: index + round
+    })));
+    const summary = buildProgressionSummary(attempts);
+    expect(summary.levels.find((item) => item.level === "anchors")?.totalAttempts).toBe(0);
+    expect(summary.levels.find((item) => item.level === "anchors")?.isMastered).toBe(false);
+    expect(summary.recommendedLevel).toBe("anchors");
   });
 });

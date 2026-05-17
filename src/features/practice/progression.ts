@@ -1,4 +1,4 @@
-import type { Attempt, DifficultyLevel, NoteStats } from "../../types";
+import type { Attempt, DifficultyLevel } from "../../types";
 import { getLevel } from "../../data/levels";
 
 export type LevelProgress = {
@@ -37,17 +37,26 @@ function median(values: number[]): number {
   return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
 }
 
-export function buildProgressionSummary(attempts: Attempt[], noteStats: NoteStats[]): ProgressionSummary {
+export function buildProgressionSummary(attempts: Attempt[]): ProgressionSummary {
   let previousMastered = true;
   const levels = progressionLevelOrder.map((level) => {
     const noteIds = getLevel(level).noteIds;
     const noteIdSet = new Set(noteIds);
-    const levelAttempts = attempts.filter((attempt) => {
+    const attemptsWithLevel = attempts.filter((attempt) => attempt.level === level);
+    const legacyLevelAttempts = attempts.filter((attempt) => {
+      if (attempt.level) return false;
       if (attempt.noteId && noteIdSet.has(attempt.noteId)) return true;
       return attempt.noteIds?.some((noteId) => noteIdSet.has(noteId)) ?? false;
     });
-    const stats = noteStats.filter((stat) => noteIdSet.has(stat.noteId));
-    const attemptedNotes = stats.filter((stat) => stat.totalAttempts > 0).length;
+    const levelAttempts = attemptsWithLevel.length > 0 ? attemptsWithLevel : legacyLevelAttempts;
+    const attemptedNoteIds = new Set<string>();
+    for (const attempt of levelAttempts) {
+      if (attempt.noteId && noteIdSet.has(attempt.noteId)) attemptedNoteIds.add(attempt.noteId);
+      attempt.noteIds?.forEach((noteId) => {
+        if (noteIdSet.has(noteId)) attemptedNoteIds.add(noteId);
+      });
+    }
+    const attemptedNotes = attemptedNoteIds.size;
     const totalAttempts = levelAttempts.length;
     const correctAttempts = levelAttempts.filter((attempt) => attempt.isCorrect).length;
     const accuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;

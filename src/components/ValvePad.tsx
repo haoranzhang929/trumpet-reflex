@@ -8,6 +8,7 @@ type Props = {
 };
 
 export function ValvePad({ selected, onChange, disabled = false, openLabel = "Open / 0" }: Props) {
+  const isOpenSelected = selected.length === 0;
   const toggle = (valve: Valve) => {
     if (selected.includes(valve)) onChange(selected.filter((item) => item !== valve));
     else onChange([...selected, valve].sort() as Valve[]);
@@ -39,8 +40,13 @@ export function ValvePad({ selected, onChange, disabled = false, openLabel = "Op
         <button
           type="button"
           disabled={disabled}
+          aria-pressed={isOpenSelected}
           onClick={() => onChange([])}
-          className="min-h-14 rounded-lg border border-black/10 bg-white text-lg font-semibold text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
+          className={`min-h-14 rounded-lg border text-lg font-semibold transition active:scale-[0.98] ${
+            isOpenSelected
+              ? "border-brass bg-brass text-white shadow-lg"
+              : "border-black/10 bg-white text-[#1D1D1F] dark:border-white/10 dark:bg-[#2A2A30] dark:text-white"
+          }`}
         >
           {openLabel}
         </button>

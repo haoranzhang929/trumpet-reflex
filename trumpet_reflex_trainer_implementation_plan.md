@@ -2,7 +2,7 @@
 
 ## 0. Current Implementation Snapshot
 
-Updated: 2026-05-16
+Updated: 2026-05-17
 
 This document started as the initial build plan. It now also records the implementation history and current product shape. Completed work is marked with `[x]`; still-open work is marked with `[ ]`.
 
@@ -37,6 +37,19 @@ Completed in that upgrade:
 - [x] Reworked Settings into grouped defaults, behavior, app preferences, advanced settings, custom note set, and data sections.
 - [x] Shortened Help to the current workflow instead of the original long instruction sheet.
 - [x] Removed obsolete `answerNotation`, non-functional concert-pitch setting, and stale i18n strings.
+
+### May 17, 2026 Practice QA Fixes
+
+- [x] Timer expiry now stops on the current question and lets the user submit before the drill finishes.
+- [x] Learning-path completion now uses attempts recorded for that exact level, so earlier levels no longer accidentally complete later overlapping levels.
+- [x] Home quick-start practice now follows the recommended learning-path level instead of the global default level.
+- [x] Future path levels remain tappable for exploration but are labeled as free practice until the main path reaches them.
+- [x] Removed looping animation from the home 10-minute CTA and bottom Start nav tab to reduce distraction.
+- [x] Increased bottom Start nav contrast, especially in dark mode.
+- [x] Start tab now surfaces the recommended learning-path level before manual free-practice setup.
+- [x] Help dialog now explains that Start separates recommended path practice from manual/free practice.
+- [x] Mobile ready-state feedback no longer shows desktop keyboard shortcuts.
+- [x] Open / 0 fingering is visibly selected when no valves are pressed and its label explains that it means no valves.
 
 ### Still Open
 
@@ -373,12 +386,15 @@ Status: [x] Done.
 
 The current rule considers:
 
+- Scope: modern attempts count toward the level that was active when the question was answered. Legacy attempts without level metadata use note overlap as a fallback only.
 - Coverage: enough notes in the level have been attempted.
 - Volume: enough total attempts exist for the level.
 - Accuracy: target is currently 85% or higher.
 - Speed: median correct response should be reasonably fast.
 
 The home screen displays a compact learning-path card. The full path is collapsed by default to keep the first screen focused.
+
+Home quick-start buttons use the recommended learning-path level by default, so casual practice continues the main path. Drill presets and custom note-set practice remain `custom` and do not complete learning-path levels. Later path levels are still tappable for exploratory practice, but the UI labels not-yet-reached levels as free practice rather than implying they are part of the current progression step.
 
 ---
 
@@ -1225,6 +1241,21 @@ Completed:
 - [x] Settings page reorganized and long custom note set collapsed.
 - [x] Help dialog rewritten around the current workflow.
 - [x] Removed obsolete settings and stale i18n keys.
+
+### Practice QA Fixes
+
+Completed:
+
+- [x] Timer expiry changed from immediate session finish to "time is up, submit this question, then finish."
+- [x] Progression completion fixed so CDE/anchor work does not mark C to G and broader overlapping levels as mastered.
+- [x] Home quick-start buttons now carry the current recommended level into Mixed, Instrument Self-Check, Phrase Self-Check, and Weak Notes practice.
+- [x] The expanded learning path now distinguishes free-practice future levels from the current recommended level.
+- [x] Home 10-minute CTA and bottom Start nav tab now use static emphasis rather than looping beam/spin animations.
+- [x] Bottom Start nav tab now uses higher-contrast static colors.
+- [x] Start tab now includes a learning-path recommendation card so it no longer feels disconnected from progression.
+- [x] Help dialog updated to mention Start tab progression and free-practice behavior.
+- [x] Fingering Open / 0 button now has a visible selected state when no valves are pressed.
+- [x] Mobile ready feedback now omits keyboard shortcut copy.
 
 ### Current Next Questions
 

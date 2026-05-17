@@ -64,11 +64,18 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
   const [showHint, setShowHint] = useState(false);
   const [paused, setPaused] = useState(false);
   const [remainingSec, setRemainingSec] = useState(config.durationSec);
+  const [timerExpired, setTimerExpired] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const questionStartedAt = useRef(Date.now());
   const autoAdvanceRef = useRef<number | null>(null);
   const questionSectionRef = useRef<HTMLElement | null>(null);
   const [statusExpanded, setStatusExpanded] = useState(false);
+  const attemptsRef = useRef<Attempt[]>([]);
+  const sessionFinishedRef = useRef(false);
+
+  useEffect(() => {
+    attemptsRef.current = attempts;
+  }, [attempts]);
 
   const activeNotes = useMemo(() => {
     const base = getNotesForLevel(config.level, config.selectedNoteIds ?? settings.selectedNoteIds, settings.accidentalsEnabled);
@@ -155,8 +162,10 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
   useEffect(() => {
     sessionRef.current = { id: makeId(), startedAt: Date.now(), mode: config.mode, level: config.level };
+    sessionFinishedRef.current = false;
     setAttempts([]);
     setRemainingSec(config.durationSec);
+    setTimerExpired(false);
     setCurrentStreak(0);
     setPaused(false);
     setFeedback(null);
@@ -182,12 +191,14 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     return () => window.clearTimeout(id);
   }, [currentQuestionId]);
 
-  const finishSession = useCallback(async () => {
+  const finishSession = useCallback(async (finalAttempts = attemptsRef.current) => {
+    if (sessionFinishedRef.current) return;
+    sessionFinishedRef.current = true;
     if (autoAdvanceRef.current) window.clearTimeout(autoAdvanceRef.current);
-    const summary = summarizeSession(sessionRef.current, attempts);
+    const summary = summarizeSession(sessionRef.current, finalAttempts);
     await putSession(summary);
     onFinished();
-  }, [attempts, onFinished]);
+  }, [onFinished]);
 
   useEffect(() => {
     if (config.durationSec === 0 || paused) return;
@@ -195,14 +206,20 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       setRemainingSec((value) => {
         if (value <= 1) {
           window.clearInterval(interval);
-          finishSession();
+          setTimerExpired(true);
           return 0;
         }
         return (value - 1) as typeof value;
       });
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [config.durationSec, finishSession, paused]);
+  }, [config.durationSec, paused]);
+
+  useEffect(() => {
+    if (!timerExpired) return;
+    if (autoAdvanceRef.current) window.clearTimeout(autoAdvanceRef.current);
+    if (feedback) void finishSession();
+  }, [feedback, finishSession, timerExpired]);
 
   const submitAnswer = useCallback(
     async (answer: string | Valve[]) => {
@@ -226,15 +243,19 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
         createdAt: Date.now()
       };
       await addAttempt(attempt);
-      setAttempts((items) => [...items, attempt]);
+      const nextAttempts = [...attemptsRef.current, attempt];
+      attemptsRef.current = nextAttempts;
+      setAttempts(nextAttempts);
       setCurrentStreak((value) => (result.isCorrect ? value + 1 : 0));
       setFeedback({ result: result.isCorrect ? "correct" : "wrong", userAnswer: result.userAnswer, expectedAnswer: result.expectedAnswer });
       const delay = result.isCorrect ? 650 : 1400;
-      if (result.isCorrect && settings.autoAdvanceCorrect) {
+      if (timerExpired) {
+        window.setTimeout(() => void finishSession(nextAttempts), Math.min(delay, 900));
+      } else if (result.isCorrect && settings.autoAdvanceCorrect) {
         autoAdvanceRef.current = window.setTimeout(nextQuestion, delay);
       }
     },
-    [attemptContext, feedback, nextQuestion, paused, question, settings]
+    [attemptContext, feedback, finishSession, nextQuestion, paused, question, settings, timerExpired]
   );
 
   const revealAnswer = () => {
@@ -268,9 +289,14 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       createdAt: Date.now()
     };
     await addAttempt(attempt);
-    setAttempts((items) => [...items, attempt]);
+    const nextAttempts = [...attemptsRef.current, attempt];
+    attemptsRef.current = nextAttempts;
+    setAttempts(nextAttempts);
     setCurrentStreak((value) => (isCorrect ? value + 1 : 0));
     setFeedback({ result: isCorrect ? "correct" : "wrong", userAnswer: attempt.userAnswer, expectedAnswer: attempt.expectedAnswer });
+    if (timerExpired) {
+      window.setTimeout(() => void finishSession(nextAttempts), 900);
+    }
   };
 
   useEffect(() => {
@@ -302,7 +328,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
   const answered = Boolean(feedback);
   const isSelfCheck = question.mode === "instrument-self-check" || question.mode === "phrase-self-check";
-  const progressLabel = config.durationSec === 0 ? `${attempts.length} questions` : formatDuration(remainingSec);
+  const progressLabel = config.durationSec === 0 ? `${attempts.length} questions` : timerExpired ? t(settings.language, "timeUp") : formatDuration(remainingSec);
   const isFingeringQuestion = !isSelfCheck && question.answerKind === "fingering";
   const selectedAnswerLabel = isFingeringQuestion ? formatValves(selectedValves) : selectedAnswer;
   const canSubmit = !answered && !paused && !isSelfCheck && (isFingeringQuestion || selectedAnswer.length > 0);
@@ -361,6 +387,11 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       </section>
 
       <section className="answer-surface space-y-3 rounded-lg border border-black/10 p-3 shadow-xl dark:border-white/10">
+        {timerExpired && !answered ? (
+          <div className="rounded-lg border border-[#FF9500]/25 bg-[#FFF7E6] p-3 text-sm font-semibold text-[#7A3E00] dark:border-[#FFD60A]/30 dark:bg-[#332600] dark:text-[#FFE8A3]">
+            {t(settings.language, "timeUpSubmitCurrent")}
+          </div>
+        ) : null}
         {isSelfCheck && (
           <SelfCheckControls
             revealed={revealed}
@@ -409,7 +440,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
 
       {paused && <div className="rounded-lg border border-black/10 bg-[#1D1D1F] p-4 text-center font-bold text-white dark:border-white/10 dark:bg-[#2A2A30]">{t(settings.language, "paused")}</div>}
       <section className="grid grid-cols-2 gap-3 pt-2">
-        <button type="button" onClick={finishSession} className="min-h-12 rounded-lg border border-[#FF3B30]/25 bg-[#FFF1F0] font-bold text-[#B42318] dark:border-[#FF453A]/35 dark:bg-[#3B1816] dark:text-[#FFB4AE]">{t(settings.language, "end")}</button>
+        <button type="button" onClick={() => void finishSession()} className="min-h-12 rounded-lg border border-[#FF3B30]/25 bg-[#FFF1F0] font-bold text-[#B42318] dark:border-[#FF453A]/35 dark:bg-[#3B1816] dark:text-[#FFB4AE]">{t(settings.language, "end")}</button>
         <button type="button" onClick={onExit} className="min-h-12 rounded-lg border border-black/10 bg-white font-semibold text-[#6E6E73] dark:border-white/10 dark:bg-[#1E1E22] dark:text-[#A1A1AA]">{t(settings.language, "exitWithoutEnding")}</button>
       </section>
     </div>

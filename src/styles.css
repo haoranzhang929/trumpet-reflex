@@ -132,29 +132,21 @@ main section.rounded-lg.border {
     repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 10px);
 }
 
-.brass-animate-button {
+.brass-primary-button {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  background: linear-gradient(180deg, #0a84ff, #006ee6);
 }
 
-.brass-animate-button::before {
+.brass-primary-button::before {
   position: absolute;
-  inset: -60%;
+  inset: 0;
   z-index: -1;
   content: "";
   background:
-    conic-gradient(from 0deg, #007aff, #5ac8fa, #ffffff, #007aff);
-  animation: brass-button-spin 6s linear infinite;
-}
-
-.brass-animate-button::after {
-  position: absolute;
-  inset: 2px;
-  z-index: -1;
-  content: "";
-  border-radius: 6px;
-  background: linear-gradient(180deg, #0a84ff, #006ee6);
+    linear-gradient(135deg, rgb(255 255 255 / 0.22), transparent 44%),
+    linear-gradient(180deg, #0a84ff, #006ee6);
 }
 
 .shift-tile {
@@ -220,7 +212,10 @@ nav.fixed .nav-practice-tab {
   overflow: hidden;
   isolation: isolate;
   font-size: 16px;
-  background: rgb(0 122 255 / 0.10);
+  background:
+    linear-gradient(180deg, #eaf3ff, #d9ecff),
+    #eaf3ff;
+  border: 1px solid rgb(0 87 217 / 0.24);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 0.28) inset,
     0 8px 18px rgb(0 122 255 / 0.12);
@@ -229,36 +224,27 @@ nav.fixed .nav-practice-tab {
 .nav-practice-tab::before {
   position: absolute;
   z-index: 0;
-  top: 50%;
-  left: 50%;
-  width: 28px;
-  height: 124px;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgb(90 200 250 / 0.72) 22%, rgb(255 255 255 / 0.88) 50%, rgb(0 122 255 / 0.72) 78%, transparent);
-  transform: translate(-50%, -50%);
-  animation: nav-border-beam 4.8s linear infinite;
-}
-
-.nav-practice-tab::after {
-  position: absolute;
-  inset: 1px;
-  z-index: 0;
-  border-radius: 7px;
+  inset: 0;
   content: "";
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 255 255 / 0.90)),
-    #ffffff;
+    linear-gradient(135deg, rgb(255 255 255 / 0.34), transparent 55%),
+    linear-gradient(0deg, rgb(0 87 217 / 0.05), rgb(0 87 217 / 0.05));
 }
 
-.dark .nav-practice-tab {
-  background: rgb(96 165 250 / 0.16);
+html.dark nav.fixed .nav-practice-tab {
+  background:
+    linear-gradient(180deg, #17304d, #10243b),
+    #10243b;
+  border-color: rgb(147 197 253 / 0.34);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 0.16) inset,
     0 8px 18px rgb(96 165 250 / 0.10);
 }
 
-.dark .nav-practice-tab::after {
-  background: linear-gradient(180deg, rgb(17 17 19 / 0.96), rgb(17 17 19 / 0.88));
+html.dark nav.fixed .nav-practice-tab::before {
+  background:
+    linear-gradient(135deg, rgb(147 197 253 / 0.16), transparent 55%),
+    linear-gradient(0deg, rgb(96 165 250 / 0.10), rgb(96 165 250 / 0.10));
 }
 
 main > div,
@@ -388,18 +374,6 @@ button:not(:disabled):active {
   100% {
     opacity: 1;
     transform: translateX(0);
-  }
-}
-
-@keyframes brass-button-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes nav-border-beam {
-  to {
-    transform: translate(-50%, -50%) rotate(1turn);
   }
 }
 
