@@ -50,6 +50,7 @@ Completed in that upgrade:
 - [x] Help dialog now explains that Start separates recommended path practice from manual/free practice.
 - [x] Added a PWA update toast so installed users can apply a newly deployed service worker without guessing.
 - [x] Added optional haptic answer feedback: one short vibration for correct, two quick pulses for wrong.
+- [x] Added startup fallback and a React error boundary so mobile/PWA startup failures show a reload path instead of a blank screen.
 - [x] Mobile ready-state feedback no longer shows desktop keyboard shortcuts.
 - [x] Open / 0 fingering is visibly selected when no valves are pressed and its label explains that it means no valves.
 

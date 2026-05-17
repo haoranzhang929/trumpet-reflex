@@ -48,8 +48,9 @@ type FeedbackState = {
 const makeId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
 function vibrateAnswer(isCorrect: boolean, enabled: boolean) {
-  if (!enabled || !("vibrate" in navigator)) return;
-  navigator.vibrate(isCorrect ? 55 : [28, 45, 28]);
+  const vibrate = "vibrate" in navigator ? navigator.vibrate : undefined;
+  if (!enabled || typeof vibrate !== "function") return;
+  vibrate.call(navigator, isCorrect ? [55] : [28, 45, 28]);
 }
 
 export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinished, onExit }: Props) {
