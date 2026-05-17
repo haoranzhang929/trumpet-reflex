@@ -139,6 +139,7 @@ export type AppSettings = {
   defaultSessionLengthSec: 0 | 180 | 300 | 600;
   autoAdvanceCorrect: boolean;
   hintsAfterWrong: boolean;
+  hapticFeedback: boolean;
   accidentalsEnabled: boolean;
   weakNoteBias: boolean;
   selectedNoteIds: string[];

@@ -10,6 +10,7 @@ export const defaultSettings: AppSettings = {
   defaultSessionLengthSec: 600,
   autoAdvanceCorrect: true,
   hintsAfterWrong: true,
+  hapticFeedback: true,
   accidentalsEnabled: false,
   weakNoteBias: true,
   selectedNoteIds: ["c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5"],

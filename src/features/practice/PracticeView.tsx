@@ -47,6 +47,11 @@ type FeedbackState = {
 
 const makeId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
+function vibrateAnswer(isCorrect: boolean, enabled: boolean) {
+  if (!enabled || !("vibrate" in navigator)) return;
+  navigator.vibrate(isCorrect ? 55 : [28, 45, 28]);
+}
+
 export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinished, onExit }: Props) {
   const sessionRef = useRef<Pick<PracticeSession, "id" | "startedAt" | "mode" | "level">>({
     id: makeId(),
@@ -246,6 +251,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
       const nextAttempts = [...attemptsRef.current, attempt];
       attemptsRef.current = nextAttempts;
       setAttempts(nextAttempts);
+      vibrateAnswer(result.isCorrect, settings.hapticFeedback);
       setCurrentStreak((value) => (result.isCorrect ? value + 1 : 0));
       setFeedback({ result: result.isCorrect ? "correct" : "wrong", userAnswer: result.userAnswer, expectedAnswer: result.expectedAnswer });
       const delay = result.isCorrect ? 650 : 1400;
@@ -292,6 +298,7 @@ export function PracticeView({ config, settings, noteStats, weakNoteIds, onFinis
     const nextAttempts = [...attemptsRef.current, attempt];
     attemptsRef.current = nextAttempts;
     setAttempts(nextAttempts);
+    vibrateAnswer(isCorrect, settings.hapticFeedback);
     setCurrentStreak((value) => (isCorrect ? value + 1 : 0));
     setFeedback({ result: isCorrect ? "correct" : "wrong", userAnswer: attempt.userAnswer, expectedAnswer: attempt.expectedAnswer });
     if (timerExpired) {

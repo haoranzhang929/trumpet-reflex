@@ -63,6 +63,7 @@ export function SettingsView({ settings, onChange, onExport, onImport, onReset }
         <h2 className="text-lg font-bold">{t(settings.language, "practiceBehavior")}</h2>
         <Toggle label={t(settings.language, "autoAdvance")} checked={settings.autoAdvanceCorrect} onChange={(value) => update("autoAdvanceCorrect", value)} />
         <Toggle label={t(settings.language, "hintsAfterWrong")} checked={settings.hintsAfterWrong} onChange={(value) => update("hintsAfterWrong", value)} />
+        <Toggle label={t(settings.language, "hapticFeedback")} checked={settings.hapticFeedback} onChange={(value) => update("hapticFeedback", value)} />
         <Toggle label={t(settings.language, "weakWeighting")} checked={settings.weakNoteBias} onChange={(value) => update("weakNoteBias", value)} />
       </section>
 
