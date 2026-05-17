@@ -17,6 +17,7 @@ import { drillPresets } from "../data/drillPresets";
 import { getLaunchIntent } from "./launchIntent";
 import { createTodaySessionRoutine, type TodaySessionStep } from "../features/practice/todaySession";
 import { buildProgressionSummary, type ProgressionSummary } from "../features/practice/progression";
+import { subscribeToPwaUpdates, updateServiceWorker } from "../pwa/registerServiceWorker";
 
 type View = "home" | "practiceMenu" | "practice" | "review" | "settings" | "reference";
 type PracticeStartConfig = {
@@ -33,6 +34,7 @@ export default function App() {
   const launchIntentHandled = useRef(false);
   const [view, setView] = useState<View>("home");
   const [showHelp, setShowHelp] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [sessions, setSessions] = useState<PracticeSession[]>([]);
@@ -64,6 +66,8 @@ export default function App() {
   useEffect(() => {
     refreshData();
   }, []);
+
+  useEffect(() => subscribeToPwaUpdates(() => setUpdateAvailable(true)), []);
 
   useEffect(() => {
     saveSettings(settings);
@@ -294,6 +298,22 @@ export default function App() {
             ))}
           </div>
         </nav>
+        {updateAvailable && (
+          <div className="fixed inset-x-0 bottom-[calc(max(env(safe-area-inset-bottom),0.75rem)+4.5rem)] z-50 px-4">
+            <div className="mx-auto flex max-w-3xl items-center gap-3 rounded-lg border border-black/10 bg-white p-3 text-sm text-[#1D1D1F] shadow-2xl dark:border-white/10 dark:bg-[#1E1E22] dark:text-white">
+              <div className="min-w-0 flex-1">
+                <div className="font-black">{t(settings.language, "appUpdateAvailable")}</div>
+                <div className="mt-0.5 text-xs text-[#6E6E73] dark:text-[#A1A1AA]">{t(settings.language, "appUpdateCopy")}</div>
+              </div>
+              <button type="button" onClick={() => void updateServiceWorker(true)} className="min-h-10 shrink-0 rounded-lg bg-brass px-3 font-bold text-white">
+                {t(settings.language, "updateNow")}
+              </button>
+              <button type="button" onClick={() => setUpdateAvailable(false)} className="min-h-10 shrink-0 rounded-lg border border-black/10 px-3 font-bold text-[#6E6E73] dark:border-white/10 dark:text-[#A1A1AA]">
+                {t(settings.language, "later")}
+              </button>
+            </div>
+          </div>
+        )}
         {showHelp && <HelpDialog language={settings.language} onClose={() => setShowHelp(false)} />}
       </div>
     </div>

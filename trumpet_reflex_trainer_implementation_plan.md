@@ -48,6 +48,7 @@ Completed in that upgrade:
 - [x] Increased bottom Start nav contrast, especially in dark mode.
 - [x] Start tab now surfaces the recommended learning-path level before manual free-practice setup.
 - [x] Help dialog now explains that Start separates recommended path practice from manual/free practice.
+- [x] Added a PWA update toast so installed users can apply a newly deployed service worker without guessing.
 - [x] Mobile ready-state feedback no longer shows desktop keyboard shortcuts.
 - [x] Open / 0 fingering is visibly selected when no valves are pressed and its label explains that it means no valves.
 
@@ -1254,6 +1255,7 @@ Completed:
 - [x] Bottom Start nav tab now uses higher-contrast static colors.
 - [x] Start tab now includes a learning-path recommendation card so it no longer feels disconnected from progression.
 - [x] Help dialog updated to mention Start tab progression and free-practice behavior.
+- [x] PWA registration now exposes service-worker update events and shows an in-app update prompt.
 - [x] Fingering Open / 0 button now has a visible selected state when no valves are pressed.
 - [x] Mobile ready feedback now omits keyboard shortcut copy.
 
